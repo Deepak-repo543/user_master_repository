@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: user-master
+
+  config:
+    import: "configserver:http://localhost:8888"

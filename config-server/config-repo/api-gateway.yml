@@ -1,0 +1,70 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOrigins:
+                  - "http://localhost:8080"
+                  - "http://localhost:8084"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                allowCredentials: true
+
+          routes:
+
+            - id: auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/auth/**,/api/auth/**
+
+            - id: user-master
+              uri: lb://user-master
+              predicates:
+                - Path=/user/**
+
+            - id: user-master-notification
+              uri: lb://user-master
+              predicates:
+                - Path=/notification/**
+
+            - id: user-master-uploads
+              uri: lb://user-master
+              predicates:
+                - Path=/uploads/**
+
+            - id: master-service
+              uri: lb://master-service
+              predicates:
+                - Path=/branch/**,/department/**,/designation/**,/employee/**,/module/**,/role/**
+
+            - id: common-service
+              uri: lb://common-service
+              predicates:
+                - Path=/common/user/**
+              filters:
+                - StripPrefix=1
+
+jwt:
+  secret: ${JWT_SECRET}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
