@@ -1,5 +1,5 @@
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY build/libs/*.jar app.jar
-EXPOSE 8081
+COPY build/libs/master-service-0.0.1-SNAPSHOT.jar app.jar
+EXPOSE 8087
 ENTRYPOINT ["java", "-jar", "app.jar"]

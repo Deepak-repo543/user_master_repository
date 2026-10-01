@@ -1,0 +1,150 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - office-network
+
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - office-network
+
+  config-server:
+    build:
+      context: ./config-server
+      dockerfile: Dockerfile
+    container_name: config-server
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    environment:
+      CONFIG_REPO_PATH: file:/config-repo
+    volumes:
+      - ./config-server/config-repo:/config-repo
+    networks:
+      - office-network
+
+  eureka-server:
+    build:
+      context: ./eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    depends_on:
+      - config-server
+    networks:
+      - office-network
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      EUREKA_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      - mysql
+      - eureka-server
+    networks:
+      - office-network
+
+  master-service:
+    build:
+      context: ./master-service
+      dockerfile: Dockerfile
+    container_name: master-service
+    restart: unless-stopped
+    ports:
+      - "8087:8087"
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      EUREKA_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      - mysql
+      - redis
+      - eureka-server
+    networks:
+      - office-network
+
+  user-master:
+    build:
+      context: ./user-master
+      dockerfile: Dockerfile
+    container_name: user-master
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MASTER_SERVICE_URL: http://master-service:8087
+      EUREKA_URL: http://eureka-server:8761/eureka/
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+    depends_on:
+      - mysql
+      - redis
+      - eureka-server
+      - master-service
+    volumes:
+      - user-uploads:/app/uploads
+    networks:
+      - office-network
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      EUREKA_URL: http://eureka-server:8761/eureka/
+    depends_on:
+      - eureka-server
+      - auth-service
+      - master-service
+      - user-master
+    networks:
+      - office-network
+
+volumes:
+  mysql-data:
+  redis-data:
+  user-uploads:
+
+networks:
+  office-network:
+    driver: bridge

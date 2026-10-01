@@ -52,19 +52,12 @@ spring:
               predicates:
                 - Path=/branch/**,/department/**,/designation/**,/employee/**,/module/**,/role/**
 
-            - id: common-service
-              uri: lb://common-service
-              predicates:
-                - Path=/common/user/**
-              filters:
-                - StripPrefix=1
-
 jwt:
   secret: ${JWT_SECRET}
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true

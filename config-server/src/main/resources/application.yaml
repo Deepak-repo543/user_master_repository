@@ -13,4 +13,4 @@ spring:
     config:
       server:
         native:
-          search-locations: file:///C:/Users/Deepak%20Rathore/Desktop/office/config-server/config-repo
+          search-locations: file:/config-repo
