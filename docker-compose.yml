@@ -109,6 +109,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       MASTER_SERVICE_URL: http://master-service:8087
+      SPRING_CLOUD_CONFIG_URI: http://config-server:8888
       EUREKA_URL: http://eureka-server:8761/eureka/
       MAIL_PASSWORD: ${MAIL_PASSWORD}
     depends_on:
