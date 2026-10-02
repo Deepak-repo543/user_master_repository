@@ -4,7 +4,6 @@ import type { AppDispatch, RootState } from "@/pages/store/store";
 import { Box, Chip, Drawer, Snackbar, Fab, Grid, IconButton, Tooltip, Typography, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Alert, } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -20,7 +19,7 @@ import { useUser } from "@/pages/hooks/useUser";
 import ReactMaterialTable from "@/components/react-material-table";
 import AddUserForm from "@/pages/user/add-form";
 import UpdateUserForm from "@/pages/user/update-form";
-import { GetUsersParams, type User } from "@/pages/store/slices/user-slice";
+import { type User } from "@/pages/store/slices/user-slice";
 import UserActiveFilters from "@/components/user-active-filters";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -413,46 +412,6 @@ const UserActivityBoard = () => {
       branchOptions,
       roleOptions,
     ],
-  );
-
-  const buildParams = useCallback(
-    (targetPage: number): GetUsersParams => {
-      const bypassDate =
-        statsViewModeRef.current === "sinceBeginning";
-
-      return {
-        search: appliedFilters.globalSearch.trim(),
-        status:
-          appliedFilters.status === ""
-            ? null
-            : appliedFilters.status === "true",
-        departmentId: appliedFilters.department
-          ? Number(appliedFilters.department)
-          : null,
-        designationId: appliedFilters.designation
-          ? Number(appliedFilters.designation)
-          : null,
-        roleId: appliedFilters.role
-          ? Number(appliedFilters.role)
-          : null,
-        branch: appliedFilters.branch || null,
-        employeeName: appliedFilters.employeeName || null,
-
-        fromDate: bypassDate
-          ? undefined
-          : appliedFilters.createdDateFrom || undefined,
-
-        toDate: bypassDate
-          ? undefined
-          : appliedFilters.createdDateTo || undefined,
-
-        page: targetPage,
-        size: rowsPerPage,
-        sortBy,
-        direction,
-      };
-    },
-    [appliedFilters, rowsPerPage, sortBy, direction],
   );
 
   const userColumns = useMemo<MRT_ColumnDef<User>[]>(
@@ -1308,45 +1267,36 @@ const UserActivityBoard = () => {
     [handleOpenUserForm, handleDeleteClick],
   );
   useEffect(() => {
-    const search = appliedFilters.globalSearch.trim();
-    const hasValidSearch = search.length >= 2;
-
-    const defaultRange = getDefaultDateRange();
-
-    const isDateFilterActive =
-      appliedFilters.createdDateFrom !== defaultRange.fromDate ||
-      appliedFilters.createdDateTo !== defaultRange.toDate;
-
-    const hasAdvancedFilters =
-      appliedFilters.status !== "" ||
-      appliedFilters.department !== "" ||
-      appliedFilters.designation !== "" ||
-      appliedFilters.branch !== "" ||
-      appliedFilters.role !== "" ||
-      appliedFilters.employeeName !== "" ||
-      isDateFilterActive;
-
-    const shouldSearch =
-      hasValidSearch || hasAdvancedFilters;
-
-    if (shouldSearch) {
-      searchUsers(buildParams(page));
-    } else {
-      getUsers({
-        page,
-        size: rowsPerPage,
-        sortBy,
-        direction,
-        fromDate:
-          statsViewModeRef.current === "sinceBeginning"
-            ? undefined
-            : appliedFilters.createdDateFrom || undefined,
-        toDate:
-          statsViewModeRef.current === "sinceBeginning"
-            ? undefined
-            : appliedFilters.createdDateTo || undefined,
-      });
-    }
+    getUsers({
+      page,
+      size: rowsPerPage,
+      sortBy,
+      direction,
+      search: appliedFilters.globalSearch.trim() || undefined,
+      status:
+        appliedFilters.status === ""
+          ? null
+          : appliedFilters.status === "true",
+      departmentId: appliedFilters.department
+        ? Number(appliedFilters.department)
+        : null,
+      designationId: appliedFilters.designation
+        ? Number(appliedFilters.designation)
+        : null,
+      roleId: appliedFilters.role
+        ? Number(appliedFilters.role)
+        : null,
+      branch: appliedFilters.branch || null,
+      employeeName: appliedFilters.employeeName || null,
+      fromDate:
+        statsViewModeRef.current === "sinceBeginning"
+          ? undefined
+          : appliedFilters.createdDateFrom || undefined,
+      toDate:
+        statsViewModeRef.current === "sinceBeginning"
+          ? undefined
+          : appliedFilters.createdDateTo || undefined,
+    });
   }, [
     appliedFilters.globalSearch,
     appliedFilters.status,
@@ -1361,10 +1311,8 @@ const UserActivityBoard = () => {
     rowsPerPage,
     sortBy,
     direction,
-    searchUsers,
     getUsers,
-    buildParams,
-    tableRefreshKey
+    tableRefreshKey,
   ]);
 
   useEffect(() => {
@@ -1877,35 +1825,35 @@ const UserActivityBoard = () => {
       </Dialog>
 
       <UserExcelUpload
-  open={openExcelUpload}
-  onClose={() => setOpenExcelUpload(false)}
-  onSuccess={(result) => {
-    setOpenExcelUpload(false);
-    setPage(0);
-    setTableRefreshKey((prev) => prev + 1);
+        open={openExcelUpload}
+        onClose={() => setOpenExcelUpload(false)}
+        onSuccess={(result) => {
+          setOpenExcelUpload(false);
+          setPage(0);
+          setTableRefreshKey((prev) => prev + 1);
 
-    const successfulEmployeeCodes = result?.successfulEmployeeCodes ?? [];
-    successfulEmployeeCodes.forEach((employeeCode) => {
-      if (employeeCode) {
-        userService.invalidateUserHistory(employeeCode);
-      }
-    });
-    const successCount = result?.successCount ?? 0;
-    const failureCount = result?.failureCount ?? 0;
+          const successfulEmployeeCodes = result?.successfulEmployeeCodes ?? [];
+          successfulEmployeeCodes.forEach((employeeCode) => {
+            if (employeeCode) {
+              userService.invalidateUserHistory(employeeCode);
+            }
+          });
+          const successCount = result?.successCount ?? 0;
+          const failureCount = result?.failureCount ?? 0;
 
-    if (failureCount > 0) {
-      setExcelSuccessMessage(
-        `${successCount} user${successCount !== 1 ? "s" : ""} uploaded successfully and ${failureCount} row${failureCount !== 1 ? "s" : ""} failed.`,
-      );
-    } else {
-      setExcelSuccessMessage(
-        `${successCount} user${successCount !== 1 ? "s" : ""} uploaded successfully.`,
-      );
-    }
+          if (failureCount > 0) {
+            setExcelSuccessMessage(
+              `${successCount} user${successCount !== 1 ? "s" : ""} uploaded successfully and ${failureCount} row${failureCount !== 1 ? "s" : ""} failed.`,
+            );
+          } else {
+            setExcelSuccessMessage(
+              `${successCount} user${successCount !== 1 ? "s" : ""} uploaded successfully.`,
+            );
+          }
 
-    window.dispatchEvent(new Event("notification-updated"));
-  }}
-/>
+          window.dispatchEvent(new Event("notification-updated"));
+        }}
+      />
 
       <Snackbar
         open={snackbar.open}
