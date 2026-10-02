@@ -317,10 +317,12 @@ const userService = {
   },
 
   getUserDepartmentCount: async (param?: {
-    dateFrom?: string;
-    dateTo?: string;
+    fromDate?: string;
+    toDate?: string;
   }) => {
-    const response = await axiosInstance.get("/user/department-count");
+    const response = await axiosInstance.get("/user/department-count", {
+      params: param,
+    });
     return response.data;
   },
 

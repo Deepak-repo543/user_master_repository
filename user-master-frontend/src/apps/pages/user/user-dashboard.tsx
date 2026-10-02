@@ -147,8 +147,8 @@ const Dashboard = () => {
     async (from: string, to: string) => {
       try {
         const params = {
-          ...(from ? { dateFrom: from } : {}),
-          ...(to ? { dateTo: to } : {}),
+          ...(from ? { fromDate: from } : {}),
+          ...(to ? { toDate: to } : {}),
         };
 
         const [statusResponse, departmentResponse] = await Promise.all([
