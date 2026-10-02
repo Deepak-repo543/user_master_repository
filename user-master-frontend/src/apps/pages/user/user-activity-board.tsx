@@ -113,7 +113,7 @@ const UserActivityBoard = () => {
   ) => {
     if (!value) return;
     setPreviewFile({
-      url: `http://localhost:8084/uploads/${value}`,
+      url: `/uploads/${value}`,
       name:
         originalName ||
         value.split("/").pop() ||
@@ -1021,7 +1021,7 @@ const UserActivityBoard = () => {
             );
           }
 
-          const imageUrl = `http://localhost:8084/uploads/${value}`;
+          const imageUrl = `/uploads/${value}`;
 
           return (
             <Tooltip title="Click to preview" arrow>
@@ -1098,7 +1098,7 @@ const UserActivityBoard = () => {
             );
           }
 
-          const imageUrl = `http://localhost:8084/uploads/${value}`;
+          const imageUrl = `/uploads/${value}`;
 
           return (
             <Tooltip title="Click to preview" arrow>
