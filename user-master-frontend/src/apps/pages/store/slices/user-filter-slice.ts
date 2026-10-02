@@ -41,7 +41,7 @@ export const getDefaultDateRange = () => {
   const today = new Date();
 
   const fromDate = new Date(today);
-  fromDate.setDate(today.getDate() - 3);
+  fromDate.setDate(today.getDate() - 6);
 
   return {
     fromDate: getFormattedDate(fromDate),
