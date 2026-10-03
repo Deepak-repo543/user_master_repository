@@ -15,14 +15,14 @@ const SIDEBAR_COLLAPSED_WIDTH = 68;
 
 const menuItems: SidebarMenuItem[] = [
   {
-    id: "dashboard",
-    label: "Dashboard",
-    icon: <DashboardIcon />,
-  },
-  {
     id: "user-master",
     label: "User Master",
     icon: <ManageAccountsIcon />,
+  },
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: <DashboardIcon />,
   },
 ];
 
@@ -30,7 +30,7 @@ const App = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const [currentPage, setCurrentPage] = useState("dashboard");
+  const [currentPage, setCurrentPage] = useState("user-master");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const userData = JSON.parse(localStorage.getItem("user") || "{}");

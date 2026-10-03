@@ -22,6 +22,7 @@
     "apexcharts": "^7.1.0",
     "axios": "^1.19.0",
     "date-fns": "^4.4.0",
+    "dayjs": "^1.11.23",
     "install": "^0.13.0",
     "jwt-decode": "^4.0.0",
     "material-react-table": "^3.2.1",

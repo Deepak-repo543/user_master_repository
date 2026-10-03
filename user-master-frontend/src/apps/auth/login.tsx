@@ -170,21 +170,6 @@ const Login = () => {
                             "Login"
                         )}
                     </Button>
-
-                    <Button
-                        fullWidth
-                        variant="text"
-                        onClick={() => navigate("/register")}
-                        sx={{
-                            mt: 1,
-                            textTransform: "none",
-                            fontWeight: 600,
-                        }}
-                    >
-                        Register New User
-                    </Button>
-
-
                 </CardContent>
             </Card>
         </Box>

@@ -8,6 +8,7 @@ import FileUploadIcon from "@mui/icons-material/FileUpload";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import BarChartRoundedIcon from "@mui/icons-material/BarChartRounded";
+import dayjs from "dayjs";
 import HowToRegRoundedIcon from "@mui/icons-material/HowToRegRounded";
 import PersonOffRoundedIcon from "@mui/icons-material/PersonOffRounded";
 import UserDownloadExcel from "@mui/icons-material/DownloadingTwoTone";
@@ -87,6 +88,7 @@ const UserActivityBoard = () => {
   const [userToDelete, setUserToDelete] = useState<number | null>(null);
   const [emailSuccessDialogOpen, setEmailSuccessDialogOpen] = useState(false);
   const [emailSuccessMessage, setEmailSuccessMessage] = useState("");
+  const [cardClickKey, setCardClickKey] = useState(0);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openExcelUpload, setOpenExcelUpload] = useState(false);
@@ -96,12 +98,14 @@ const UserActivityBoard = () => {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
   const [sortBy, setSortBy] = useState("id");
+  const [direction, setDirection] = useState<"asc" | "desc">("asc");
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "error", });
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string; type: "profile" | "signature"; } | null>(null);
   const [statsViewMode, setStatsViewMode] = useState<"asPerDate" | "sinceBeginning">("asPerDate");
   const [selectedStatCard, setSelectedStatCard] = useState<string | null>("false");
   const statsViewModeRef = useRef(statsViewMode);
   const [tableRefreshKey, setTableRefreshKey] = useState(0);
+  const fetchModeRef = useRef<"list" | "search">("list");
 
 
 
@@ -161,9 +165,13 @@ const UserActivityBoard = () => {
     setStatsViewMode(mode);
 
     if (mode === "sinceBeginning") {
+      setSelectedStatCard(null);
       return;
     }
 
+    setSelectedStatCard("false");
+    dispatch(applyUserFiltersWithStatus("false"));
+    fetchModeRef.current = "list";
     setPage(0);
     setTableRefreshKey((prev) => prev + 1);
   };
@@ -236,28 +244,47 @@ const UserActivityBoard = () => {
     }
   };
 
-  const [direction, setDirection] = useState<"asc" | "desc">("asc");
-  const maxDate = new Date().toISOString().split("T")[0];
+  const userData = JSON.parse(localStorage.getItem("user") || "{}");
+  const roleName = String(userData.role || userData.roleName || "").toUpperCase().replace("ROLE_", "");
+  const canEditOrAdd = ["ADMIN", "MANAGEMENT", "HOD"].includes(roleName);
+  const canDelete = roleName === "ADMIN";
+  const canUpload = ["ADMIN", "HOD"].includes(roleName);
+  const canExport = ["ADMIN", "MANAGEMENT", "HOD"].includes(roleName);
+  const maxDate = dayjs().format("YYYY-MM-DD");
   const minDate = "";
+
+  const showNotAuthorized = useCallback((message: string) => {
+    setSnackbar({ open: true, message, severity: "error" });
+  }, []);
+
   const handleOpenUserForm = useCallback(
     (userId?: number) => {
-      if (userId === undefined) {
-        clearSingleUser();
+      if (!canEditOrAdd) {
+        showNotAuthorized("You are not authorized to perform this action.");
+        return;
       }
+      if (userId === undefined) clearSingleUser();
       setSelectedUserId(userId);
       setOpenUserForm(true);
     },
-    [clearSingleUser],
+    [clearSingleUser, canEditOrAdd, showNotAuthorized],
+  );
+
+  const handleDeleteClick = useCallback(
+    (user: User) => {
+      if (!canDelete) {
+        showNotAuthorized("You are not authorized to delete users.");
+        return;
+      }
+      setUserToDelete(user.id);
+      setDeleteDialogOpen(true);
+    },
+    [canDelete, showNotAuthorized],
   );
 
   const handleCloseUserForm = useCallback(() => {
     setOpenUserForm(false);
     setSelectedUserId(undefined);
-  }, []);
-
-  const handleDeleteClick = useCallback((user: User) => {
-    setUserToDelete(user.id);
-    setDeleteDialogOpen(true);
   }, []);
 
   const handleDeleteCancel = useCallback(() => {
@@ -1267,36 +1294,40 @@ const UserActivityBoard = () => {
     [handleOpenUserForm, handleDeleteClick],
   );
   useEffect(() => {
-    getUsers({
+    const isSinceBeginning = statsViewModeRef.current === "sinceBeginning";
+
+    // Since Beginning me jab tak card click nahi, table API mat chalao
+    if (isSinceBeginning && selectedStatCard === null) return;
+
+    const params = {
       page,
       size: rowsPerPage,
       sortBy,
       direction,
       search: appliedFilters.globalSearch.trim() || undefined,
       status:
-        appliedFilters.status === ""
-          ? null
-          : appliedFilters.status === "true",
-      departmentId: appliedFilters.department
-        ? Number(appliedFilters.department)
-        : null,
-      designationId: appliedFilters.designation
-        ? Number(appliedFilters.designation)
-        : null,
-      roleId: appliedFilters.role
-        ? Number(appliedFilters.role)
-        : null,
+        appliedFilters.status === "" ? null : appliedFilters.status === "true",
+      departmentId: appliedFilters.department ? Number(appliedFilters.department) : null,
+      designationId: appliedFilters.designation ? Number(appliedFilters.designation) : null,
+      roleId: appliedFilters.role ? Number(appliedFilters.role) : null,
       branch: appliedFilters.branch || null,
       employeeName: appliedFilters.employeeName || null,
-      fromDate:
-        statsViewModeRef.current === "sinceBeginning"
-          ? undefined
-          : appliedFilters.createdDateFrom || undefined,
-      toDate:
-        statsViewModeRef.current === "sinceBeginning"
-          ? undefined
-          : appliedFilters.createdDateTo || undefined,
-    });
+      fromDate: isSinceBeginning ? undefined : appliedFilters.createdDateFrom || undefined,
+      toDate: isSinceBeginning ? undefined : appliedFilters.createdDateTo || undefined,
+    };
+
+    const useSearch =
+      isSinceBeginning &&
+      fetchModeRef.current === "search" &&
+      appliedFilters.status !== "";
+
+    if (useSearch) {
+      searchUsers(params);
+    } else {
+      getUsers(params);
+    }
+
+    fetchModeRef.current = "list"; // agla trigger (sort/page) list se
   }, [
     appliedFilters.globalSearch,
     appliedFilters.status,
@@ -1312,7 +1343,10 @@ const UserActivityBoard = () => {
     sortBy,
     direction,
     getUsers,
+    searchUsers,
     tableRefreshKey,
+    cardClickKey,
+    selectedStatCard,
   ]);
 
   useEffect(() => {
@@ -1389,11 +1423,15 @@ const UserActivityBoard = () => {
   };
 
   const handleStatusCardClick = (status: string) => {
+    const sameStatus = appliedFilters.status === status;
     setSelectedStatCard(status);
-
     dispatch(applyUserFiltersWithStatus(status));
-
     setPage(0);
+    fetchModeRef.current = status !== "" ? "search" : "list";
+
+    if (sameStatus) {
+      setCardClickKey((prev) => prev + 1);
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -1427,6 +1465,16 @@ const UserActivityBoard = () => {
         severity: "success",
       });
     } catch (error: any) {
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+      setSnackbar({
+        open: true,
+        message:
+          error?.response?.status === 403
+            ? "You are not authorized to delete users."
+            : error?.response?.data?.message || "Failed to delete user.",
+        severity: "error",
+      });
     }
   };
 
@@ -1898,6 +1946,10 @@ const UserActivityBoard = () => {
         <span>
           <Fab
             onClick={async () => {
+              if (!canExport) {
+                showNotAuthorized("You are not authorized to download the template.");
+                return;
+              }
               const blob = await userService.downloadTemplate();
               const blobUrl = window.URL.createObjectURL(blob);
               const link = document.createElement("a");
@@ -1936,7 +1988,13 @@ const UserActivityBoard = () => {
       <Tooltip title="Download Excel">
         <span>
           <Fab
-            onClick={handleExcelDownload}
+            onClick={() => {
+              if (!canExport) {
+                showNotAuthorized("You are not authorized to download Excel.");
+                return;
+              }
+              handleExcelDownload();
+            }}
             sx={{
               position: "fixed",
               right: { xs: 18, md: 28 },
@@ -2113,6 +2171,10 @@ const UserActivityBoard = () => {
         <span>
           <Fab
             onClick={() => {
+              if (!canUpload) {
+                showNotAuthorized("You are not authorized to upload users.");
+                return;
+              }
               setOpenExcelUpload(true);
             }}
             sx={{

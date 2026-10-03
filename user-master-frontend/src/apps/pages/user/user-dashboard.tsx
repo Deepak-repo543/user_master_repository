@@ -206,6 +206,8 @@ const Dashboard = () => {
   };
 
   const closeDepartmentDialog = () => {
+    (document.activeElement as HTMLElement | null)?.blur();
+    setDepartmentDialogOpen(false);
     setSelectedDepartment(null);
     setDepartmentUsers([]);
   };
@@ -989,7 +991,7 @@ const Dashboard = () => {
       </Grid>
 
       <Dialog
-        open={Boolean(selectedDepartment)}
+        open={departmentDialogOpen}
         onClose={closeDepartmentDialog}
         fullWidth
         maxWidth="xl"

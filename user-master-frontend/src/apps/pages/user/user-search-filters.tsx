@@ -6,6 +6,10 @@ import KeyboardArrowDownRoundedIcon from "@mui/icons-material/KeyboardArrowDownR
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import AutoComplete from "@/components/auto-complete";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs from "dayjs";
 
 export type FilterKey =
   | "globalSearch"
@@ -274,6 +278,22 @@ const UserSearchFilters = ({
     setShowAdvancedFilters(false);
   };
 
+  const handleDateChange = (
+    key: "createdDateFrom" | "createdDateTo",
+    d: dayjs.Dayjs | null,
+    min?: string,
+    max?: string
+  ) => {
+    if (d === null) {
+      onFilterChange(key, "");
+      return;
+    }
+    if (!d.isValid()) return;
+    if (min && d.isBefore(dayjs(min), "day")) return;
+    if (max && d.isAfter(dayjs(max), "day")) return;
+    onFilterChange(key, d.format("YYYY-MM-DD"));
+  };
+
   return (
     <Card
       elevation={0}
@@ -377,102 +397,63 @@ const UserSearchFilters = ({
           />
         </Box>
 
-        <Grid container spacing={1.5}>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <FieldLabel>From Date</FieldLabel>
-
-            <TextField
-              type="date"
-              fullWidth
-              size="small"
-              value={filters.createdDateFrom}
-              onChange={(e) => {
-                const value = e.target.value;
-
-                if (
-                  value &&
-                  minDate &&
-                  value < minDate
-                ) {
-                  return;
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <Grid container spacing={1.5}>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FieldLabel>From Date</FieldLabel>
+              <DatePicker
+                format="DD-MM-YYYY"
+                value={filters.createdDateFrom ? dayjs(filters.createdDateFrom) : null}
+                minDate={minDate ? dayjs(minDate) : undefined}
+                maxDate={
+                  filters.createdDateTo
+                    ? dayjs(filters.createdDateTo)
+                    : maxDate
+                      ? dayjs(maxDate)
+                      : undefined
                 }
-
-                if (
-                  value &&
-                  maxDate &&
-                  value > maxDate
-                ) {
-                  return;
+                onChange={(d) =>
+                  handleDateChange(
+                    "createdDateFrom",
+                    d,
+                    minDate || undefined,
+                    filters.createdDateTo || maxDate || undefined
+                  )
                 }
+                slotProps={{
+                  textField: { size: "small", fullWidth: true, sx: fieldSx },
+                }}
+              />
+            </Grid>
 
-                if (
-                  value &&
-                  filters.createdDateTo &&
-                  value > filters.createdDateTo
-                ) {
-                  return;
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FieldLabel>To Date</FieldLabel>
+              <DatePicker
+                format="DD-MM-YYYY"
+                value={filters.createdDateTo ? dayjs(filters.createdDateTo) : null}
+                minDate={
+                  filters.createdDateFrom
+                    ? dayjs(filters.createdDateFrom)
+                    : minDate
+                      ? dayjs(minDate)
+                      : undefined
                 }
-
-                onFilterChange(
-                  "createdDateFrom",
-                  value
-                );
-              }}
-              slotProps={{
-                htmlInput: {
-                  min: minDate,
-                  max: filters.createdDateTo || maxDate,
-                },
-              }}
-              sx={fieldSx}
-            />
+                maxDate={maxDate ? dayjs(maxDate) : undefined}
+                onChange={(d) =>
+                  handleDateChange(
+                    "createdDateTo",
+                    d,
+                    filters.createdDateFrom || minDate || undefined,
+                    maxDate || undefined
+                  )
+                }
+                slotProps={{
+                  textField: { size: "small", fullWidth: true, sx: fieldSx },
+                }}
+              />
+            </Grid>
           </Grid>
-
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <FieldLabel>To Date</FieldLabel>
-
-            <TextField
-              type="date"
-              fullWidth
-              size="small"
-              value={filters.createdDateTo}
-              onChange={(e) => {
-                const value = e.target.value;
-
-                if (
-                  value &&
-                  maxDate &&
-                  value > maxDate
-                ) {
-                  return;
-                }
-
-                if (
-                  value &&
-                  filters.createdDateFrom &&
-                  value < filters.createdDateFrom
-                ) {
-                  return;
-                }
-
-                onFilterChange(
-                  "createdDateTo",
-                  value
-                );
-              }}
-              slotProps={{
-                htmlInput: {
-                  min:
-                    filters.createdDateFrom ||
-                    minDate,
-                  max: maxDate,
-                },
-              }}
-              sx={fieldSx}
-            />
-          </Grid>
-        </Grid>
-
+        </LocalizationProvider>
         {showAdvancedFilters && (
           <Fade
             in={showAdvancedFilters}
