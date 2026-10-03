@@ -5,6 +5,7 @@ import {
 } from "@reduxjs/toolkit";
 import axiosInstance from "@/pages/services/base-url";
 import type { UserRequest } from "@/pages/services/user-type";
+
 export interface User {
   id: number;
   userId?: string;
@@ -117,10 +118,8 @@ const initialState: UserState = {
 
 export const fetchUsers = createAsyncThunk(
   "users/fetchUsers",
-  async (params: GetUsersParams = {}, { rejectWithValue, requestId }) => {
+  async (params: GetUsersParams = {}, { rejectWithValue }) => {
     try {
-      console.log("LIST THUNK START:", requestId, params);
-
       const {
         search = "",
         status = null,
@@ -154,12 +153,8 @@ export const fetchUsers = createAsyncThunk(
         },
       );
 
-      console.log("LIST THUNK SUCCESS:", requestId);
-
       return response.data.data;
     } catch (error: any) {
-      console.log("LIST THUNK ERROR:", requestId, error);
-
       return rejectWithValue(
         error?.response?.data?.message ||
           error?.message ||
@@ -171,10 +166,8 @@ export const fetchUsers = createAsyncThunk(
 
 export const searchUsers = createAsyncThunk(
   "users/searchUsers",
-  async (params: GetUsersParams = {}, { rejectWithValue, requestId }) => {
+  async (params: GetUsersParams = {}, { rejectWithValue }) => {
     try {
-      console.log("SEARCH THUNK START:", requestId, params);
-
       const {
         search = "",
         status = null,
@@ -210,12 +203,8 @@ export const searchUsers = createAsyncThunk(
         },
       );
 
-      console.log("SEARCH THUNK SUCCESS:", requestId);
-
       return response.data.data;
     } catch (error: any) {
-      console.log("SEARCH THUNK ERROR:", requestId, error);
-
       return rejectWithValue(
         error?.response?.data?.message ||
           error?.message ||
@@ -251,7 +240,6 @@ export const createUser = createAsyncThunk(
         "/user/save-or-update",
         userData,
       );
-
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -271,7 +259,6 @@ export const updateUser = createAsyncThunk(
         "/user/save-or-update",
         [userData],
       );
-
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -354,11 +341,10 @@ export const fetchUserStatusCount = createAsyncThunk(
     { rejectWithValue },
   ) => {
     try {
-      const response =
-        await axiosInstance.get<ApiResponse<UserStatusCount>>(
-          "/user/status-count",
-          { params },
-        );
+      const response = await axiosInstance.get<ApiResponse<UserStatusCount>>(
+        "/user/status-count",
+        { params },
+      );
       const data = response.data.data;
       return {
         activeCount: Number(data?.activeCount ?? 0),
@@ -411,8 +397,6 @@ const userSlice = createSlice({
 
           const data = action.payload;
 
-          console.log("FETCH USERS FULFILLED:", data);
-
           state.users = data?.content ?? [];
           state.currentPage = data?.number ?? 0;
           state.totalPages = data?.totalPages ?? 0;
@@ -422,13 +406,14 @@ const userSlice = createSlice({
       )
       .addCase(fetchUsers.rejected, (state, action) => {
         state.loading = false;
-
-        console.log("FETCH USERS REJECTED:", action.payload, action.error);
-
         state.error =
           (action.payload as string) ||
           action.error.message ||
           "Failed to fetch users";
+      })
+      .addCase(searchUsers.pending, (state) => {
+        state.loading = true;
+        state.error = null;
       })
       .addCase(
         searchUsers.fulfilled,
@@ -436,8 +421,6 @@ const userSlice = createSlice({
           state.loading = false;
 
           const data = action.payload;
-
-          console.log("SEARCH USERS FULFILLED:", data);
 
           state.users = data?.content ?? [];
           state.currentPage = data?.number ?? 0;
@@ -448,19 +431,10 @@ const userSlice = createSlice({
       )
       .addCase(searchUsers.rejected, (state, action) => {
         state.loading = false;
-
-        console.log("SEARCH USERS REJECTED:", action.payload, action.error);
-
         state.error =
           (action.payload as string) ||
           action.error.message ||
           "Failed to search users";
-      })
-
-      // SEARCH USERS
-      .addCase(searchUsers.pending, (state) => {
-        state.loading = true;
-        state.error = null;
       });
 
     builder
@@ -521,7 +495,6 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = null;
       })
-
       .addCase(createUser.rejected, (state, action) => {
         state.loading = false;
         state.error =
@@ -535,12 +508,10 @@ const userSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-
       .addCase(updateUser.fulfilled, (state) => {
         state.loading = false;
         state.error = null;
       })
-
       .addCase(updateUser.rejected, (state, action) => {
         state.loading = false;
         state.error =
@@ -554,7 +525,6 @@ const userSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-
       .addCase(deleteUser.fulfilled, (state) => {
         state.loading = false;
         state.error = null;
@@ -580,14 +550,12 @@ const userSlice = createSlice({
         state.totalUsers = total;
         state.error = null;
       })
-
       .addCase(fetchUserStatusCount.rejected, (state, action) => {
         state.statusCount = {
           activeCount: 0,
           inactiveCount: 0,
           totalCount: 0,
         };
-
         state.error =
           (action.payload as string) ||
           action.error.message ||
