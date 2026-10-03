@@ -1,11 +1,20 @@
-import { useCallback, useState } from "react";
-import { Box, CssBaseline, useMediaQuery, useTheme, GlobalStyles } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import Navbar from "./apps/layout/navbar";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Box,
+  CssBaseline,
+  useMediaQuery,
+  useTheme,
+  GlobalStyles,
+} from "@mui/material";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
+
 import Sidebar, { type SidebarMenuItem } from "./apps/layout/sidebar";
+import Navbar from "./apps/layout/navbar";
 import Footer from "./apps/layout/footer";
+
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+
 import Dashboard from "./apps/pages/user/user-dashboard";
 import UserActivityBoard from "./apps/pages/user/user-activity-board";
 import userService from "./apps/pages/user/api";
@@ -13,10 +22,21 @@ import userService from "./apps/pages/user/api";
 const SIDEBAR_WIDTH = 238;
 const SIDEBAR_COLLAPSED_WIDTH = 68;
 
+// Page load ke time ek baar check hota hai:
+// page reload hua tha AND user pehle se logged in tha.
+const navEntry = performance.getEntriesByType("navigation")[0] as
+  | PerformanceNavigationTiming
+  | undefined;
+
+const shouldRedirectOnReload =
+  navEntry?.type === "reload" && !!localStorage.getItem("user");
+
+let reloadRedirectDone = false;
+
 const menuItems: SidebarMenuItem[] = [
   {
-    id: "user-master",
-    label: "User Master",
+    id: "activity-board",
+    label: "Activity Board",
     icon: <ManageAccountsIcon />,
   },
   {
@@ -28,19 +48,29 @@ const menuItems: SidebarMenuItem[] = [
 
 const App = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const theme = useTheme();
+
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
-  const [currentPage, setCurrentPage] = useState<string>(() => {
-    const justLoggedIn = sessionStorage.getItem("justLoggedIn");
-    if (justLoggedIn === "true") {
-      sessionStorage.removeItem("justLoggedIn");
-      return "dashboard";
+
+  // Logged-in user kisi bhi tab par reload kare to Activity Board par bhejo.
+  // Login ke baad normal flow me dashboard hi khulega.
+  useEffect(() => {
+    if (shouldRedirectOnReload && !reloadRedirectDone) {
+      reloadRedirectDone = true;
+      navigate("/activity-board", { replace: true });
     }
-    return "user-master";
-  });
+  }, [navigate]);
+
+  const currentPage =
+    location.pathname === "/activity-board"
+      ? "activity-board"
+      : "dashboard";
 
   const userName =
     userData.fullName ||
@@ -79,27 +109,22 @@ const App = () => {
   };
 
   const renderPage = () => {
-    switch (currentPage) {
-      case "dashboard":
+    switch (location.pathname) {
+      case "/dashboard":
         return <Dashboard />;
 
-      case "user-master":
-        return <UserActivityBoard />;
-
-      case "add-user":
-        return <UserActivityBoard />;
-
-      case "view-users":
+      case "/activity-board":
         return <UserActivityBoard />;
 
       default:
-        return <Dashboard />;
+        return <Navigate to="/dashboard" replace />;
     }
   };
 
   return (
     <>
       <CssBaseline />
+
       <GlobalStyles
         styles={{
           "html, body, #root": {
@@ -113,7 +138,9 @@ const App = () => {
       <Box
         sx={{
           height: "100vh",
-          "@supports (height: 100dvh)": { height: "100dvh" },
+          "@supports (height: 100dvh)": {
+            height: "100dvh",
+          },
           overflow: "hidden",
           backgroundColor: "#F4F7FA",
           display: "flex",
@@ -125,7 +152,13 @@ const App = () => {
           onClose={() => setMobileSidebarOpen(false)}
           menuItems={menuItems}
           activePage={currentPage}
-          onNavigate={setCurrentPage}
+          onNavigate={(page) => {
+            navigate(
+              page === "dashboard"
+                ? "/dashboard"
+                : "/activity-board",
+            );
+          }}
           brandLabel="USER MASTER"
           brandIcon={
             <ManageAccountsIcon
@@ -182,6 +215,7 @@ const App = () => {
           >
             {renderPage()}
           </Box>
+
           <Box sx={{ flexShrink: 0 }}>
             <Footer />
           </Box>

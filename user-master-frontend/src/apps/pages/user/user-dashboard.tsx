@@ -187,6 +187,7 @@ const Dashboard = () => {
 
   const handleDepartmentClick = async (row: DepartmentTableRow) => {
     try {
+      setDepartmentUsersLoading(true);
       const response = await userService.searchUsers({
         departmentId: row.departmentId,
         page: 0,
@@ -202,6 +203,8 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Failed to load department users:", error);
       setDepartmentUsers([]);
+    } finally {
+      setDepartmentUsersLoading(false);
     }
   };
 
@@ -333,35 +336,6 @@ const Dashboard = () => {
     [departmentData]
   );
 
-  const handleStatusCardClick = async (status?: boolean) => {
-    try {
-      const response = await userService.searchUsers({
-        ...(status !== undefined ? { status } : {}),
-        page: 0,
-        size: 10,
-      });
-
-      const users =
-        response?.data?.content ??
-        response?.data ??
-        [];
-
-      setSelectedDepartment(
-        status === undefined
-          ? "All Users"
-          : status
-            ? "Inactive Users"
-            : "Active Users"
-      );
-
-      setDepartmentUsers(Array.isArray(users) ? users : []);
-      setDepartmentDialogOpen(true);
-    } catch (error) {
-      console.error("Failed to load users:", error);
-      setDepartmentUsers([]);
-    }
-  };
-
   const stackedData = useMemo(
     () =>
       departmentData.map((item) => ({
@@ -371,6 +345,7 @@ const Dashboard = () => {
       })),
     [departmentData]
   );
+
   const departmentTableData: DepartmentTableRow[] = useMemo(
     () =>
       departmentData.map((item) => ({
@@ -404,11 +379,11 @@ const Dashboard = () => {
   const totalUsers = statusCount.totalCount;
   const activePercentage =
     totalUsers > 0 ? Math.round((statusCount.activeCount / totalUsers) * 100) : 0;
+
   const statCards = [
     {
       title: "Total Users",
       value: statusCount.totalCount,
-      status: undefined,
       color: "#4F46E5",
       background: "#EEF2FF",
       icon: <PeopleIcon sx={{ color: "#4F46E5" }} />,
@@ -418,7 +393,6 @@ const Dashboard = () => {
     {
       title: "Active Users",
       value: statusCount.activeCount,
-      status: false,
       color: "#16A34A",
       background: "#F0FDF4",
       icon: <PersonAddIcon sx={{ color: "#16A34A" }} />,
@@ -428,7 +402,6 @@ const Dashboard = () => {
     {
       title: "Inactive Users",
       value: statusCount.inactiveCount,
-      status: true,
       color: "#DC2626",
       background: "#FEF2F2",
       icon: <PersonRemoveIcon sx={{ color: "#DC2626" }} />,
@@ -444,6 +417,10 @@ const Dashboard = () => {
     backgroundColor: "#FFFFFF",
     boxShadow: "0 1px 3px rgba(15, 23, 42, 0.04)",
     overflow: "hidden",
+    transition: "box-shadow 0.2s ease",
+    "&:hover": {
+      boxShadow: "0 4px 12px rgba(15, 23, 42, 0.08)",
+    },
   } as const;
 
   const cardContentSx = {
@@ -703,14 +680,17 @@ const Dashboard = () => {
           >
             <Card
               elevation={0}
-              onClick={() => handleStatusCardClick(card.status)}
               sx={{
                 height: "100%",
                 borderRadius: 3,
                 border: "1px solid #E2E8F0",
                 backgroundColor: "#FFFFFF",
                 boxShadow: "0 1px 3px rgba(15, 23, 42, 0.04)",
-                cursor: "pointer",
+                transition: "box-shadow 0.2s ease, transform 0.2s ease",
+                "&:hover": {
+                  boxShadow: "0 8px 24px rgba(15, 23, 42, 0.08)",
+                  transform: "translateY(-2px)",
+                },
               }}
             >
               <CardContent
@@ -810,6 +790,7 @@ const Dashboard = () => {
                       height: "100%",
                       borderRadius: 10,
                       backgroundColor: card.color,
+                      transition: "width 0.6s ease",
                     }}
                   />
                 </Box>
