@@ -394,6 +394,7 @@ const UpdateUserForm: React.FC<UpdateUserFormProps> = ({
           overflowY: "auto",
           px: { xs: 1.5, sm: 2.5, md: 3 },
           py: { xs: 1.5, sm: 2, md: 2.5 },
+          pb: "calc(16px + env(safe-area-inset-bottom))",
         }}
       >
         <Box

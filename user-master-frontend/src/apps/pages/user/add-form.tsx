@@ -245,14 +245,15 @@ const AddUserForm: React.FC<AddUserFormProps> = ({
       </Box>
 
       {/* Scrollable Content */}
-     
+
       <Box
         sx={{
           flex: 1,
           minHeight: 0,
           overflowY: "auto",
           px: { xs: 1.5, sm: 2.5, md: 3 },
-          py: { xs: 1.5, sm: 2, md: 2.5 },     
+          py: { xs: 1.5, sm: 2, md: 2.5 },
+          pb: "calc(16px + env(safe-area-inset-bottom))",
         }}
       >
         <Box

@@ -1446,30 +1446,21 @@ const ArrayForm: React.FC<ArrayFormProps> = ({
         );
       })}
 
-      {showActions && (
-        <Box
-          sx={{
-            position: "sticky",
-            bottom: 0,
-            zIndex: 5,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 1.2,
-            mt: 1,
-            mb: 0,
-            mx: { xs: -1.5, sm: -2.5, md: -3 },
-            py: 1.5,
-            px: { xs: 1.5, sm: 2.5, md: 3 },
-            bgcolor: "#FFFFFF",
-            borderTop: "1px solid #E2E8F0",
-            pb: "calc(12px + env(safe-area-inset-bottom))",
-            "& .MuiButton-root": {
-              flex: { xs: "1 1 45%", sm: "0 0 auto" },
-            },
-          }}
-        >
+     {showActions && (
+  <Box
+    sx={{
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: 1.2,
+      mt: 1,
+      mb: 1,
+      "& .MuiButton-root": {
+        flex: { xs: "1 1 45%", sm: "0 0 auto" },
+      },
+    }}
+  >
           {allowMultiple && (
             <Button
               type="button"
