@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Box, CssBaseline, useMediaQuery, useTheme } from "@mui/material";
+import { Box, CssBaseline, useMediaQuery, useTheme, GlobalStyles } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Navbar from "./apps/layout/navbar";
 import Sidebar, { type SidebarMenuItem } from "./apps/layout/sidebar";
@@ -93,10 +93,21 @@ const App = () => {
   return (
     <>
       <CssBaseline />
+      <GlobalStyles
+        styles={{
+          "html, body, #root": {
+            height: "100%",
+            margin: 0,
+            overflow: "hidden",
+          },
+        }}
+      />
 
       <Box
         sx={{
-          minHeight: "100vh",
+          height: "100vh",
+          "@supports (height: 100dvh)": { height: "100dvh" },
+          overflow: "hidden",
           backgroundColor: "#F4F7FA",
           display: "flex",
           position: "relative",
@@ -127,7 +138,7 @@ const App = () => {
             minWidth: 0,
             display: "flex",
             flexDirection: "column",
-            height: "100vh",
+            height: "100%",
             minHeight: 0,
             overflow: "hidden",
             position: "relative",
@@ -164,8 +175,9 @@ const App = () => {
           >
             {renderPage()}
           </Box>
-
-          <Footer />
+          <Box sx={{ flexShrink: 0 }}>
+            <Footer />
+          </Box>
         </Box>
       </Box>
     </>

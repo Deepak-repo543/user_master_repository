@@ -1969,7 +1969,7 @@ const UserActivityBoard = () => {
             sx={{
               position: "fixed",
               right: { xs: 18, md: 28 },
-              bottom: { xs: 300, md: 236 },
+              bottom: { xs: 270, md: 236 },
               zIndex: 1200,
               width: 40,
               height: 40,
@@ -1998,7 +1998,7 @@ const UserActivityBoard = () => {
             sx={{
               position: "fixed",
               right: { xs: 18, md: 28 },
-              bottom: { xs: 245, md: 190 },
+              bottom: { xs: 225, md: 190 },
               zIndex: 1200,
               width: 40,
               height: 40,
@@ -2180,7 +2180,7 @@ const UserActivityBoard = () => {
             sx={{
               position: "fixed",
               right: { xs: 18, md: 28 },
-              bottom: { xs: 135, md: 145 },
+              bottom: { xs: 180, md: 145 },
               zIndex: 1200,
               width: 40,
               height: 40,
@@ -2203,7 +2203,7 @@ const UserActivityBoard = () => {
             sx={{
               position: "fixed",
               right: { xs: 18, md: 28 },
-              bottom: { xs: 80, md: 100 },
+              bottom: { xs: 135, md: 100 },
               zIndex: 1200,
               width: 40,
               height: 40,
@@ -2244,7 +2244,7 @@ const UserActivityBoard = () => {
                 xl: 1050,
               },
               maxWidth: "100vw",
-              height: "100vh",
+              height: "100dvh",
               minHeight: 0,
               display: "flex",
               flexDirection: "column",

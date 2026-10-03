@@ -132,9 +132,7 @@ const AddUserForm: React.FC<AddUserFormProps> = ({
       reset({
         users: [createEmptyUser()],
       });
-
       setSuccessDialogOpen(true);
-      onSuccess?.();
     } catch (error: any) {
       console.error("Error creating users:", error);
       console.error("Status:", error?.response?.status);
@@ -160,7 +158,7 @@ const AddUserForm: React.FC<AddUserFormProps> = ({
   const submitting = isSubmitting || loading;
 
   return (
-    <Box sx={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", bgcolor: "#F8FAFC" }}>
+    <Box sx={{ width: "100%", flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden", bgcolor: "#F8FAFC" }}>
       {/* Header - Fixed at top */}
       <Box
         sx={{
@@ -247,12 +245,14 @@ const AddUserForm: React.FC<AddUserFormProps> = ({
       </Box>
 
       {/* Scrollable Content */}
+     
       <Box
         sx={{
           flex: 1,
+          minHeight: 0,
           overflowY: "auto",
           px: { xs: 1.5, sm: 2.5, md: 3 },
-          py: { xs: 1.5, sm: 2, md: 2.5 },
+          py: { xs: 1.5, sm: 2, md: 2.5 },     
         }}
       >
         <Box
@@ -321,7 +321,10 @@ const AddUserForm: React.FC<AddUserFormProps> = ({
 
       <Dialog
         open={successDialogOpen}
-        onClose={() => setSuccessDialogOpen(false)}
+        onClose={() => {
+          setSuccessDialogOpen(false);
+          onSuccess?.();
+        }}
         maxWidth="xs"
         fullWidth
       >
@@ -339,7 +342,10 @@ const AddUserForm: React.FC<AddUserFormProps> = ({
         <DialogActions sx={{ justifyContent: "center", pb: 3, gap: 1 }}>
           <Button
             variant="contained"
-            onClick={() => setSuccessDialogOpen(false)}
+            onClick={() => {
+              setSuccessDialogOpen(false);
+              onSuccess?.();
+            }}
             sx={{ minWidth: 100 }}
           >
             OK
