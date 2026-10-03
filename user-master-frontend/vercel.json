@@ -7,6 +7,10 @@
     {
       "source": "/uploads/:path*",
       "destination": "http://16.176.145.4:8084/uploads/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
