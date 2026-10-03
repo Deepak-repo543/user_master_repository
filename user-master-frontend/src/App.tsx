@@ -30,10 +30,17 @@ const App = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const [currentPage, setCurrentPage] = useState("user-master");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
+  const [currentPage, setCurrentPage] = useState<string>(() => {
+    const justLoggedIn = sessionStorage.getItem("justLoggedIn");
+    if (justLoggedIn === "true") {
+      sessionStorage.removeItem("justLoggedIn");
+      return "dashboard";
+    }
+    return "user-master";
+  });
 
   const userName =
     userData.fullName ||

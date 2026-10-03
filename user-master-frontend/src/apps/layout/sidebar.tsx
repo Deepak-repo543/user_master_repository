@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { Box, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography, IconButton, Tooltip, useMediaQuery, useTheme } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 
 export interface SidebarMenuItem {
   id: string;
@@ -86,47 +87,87 @@ const Sidebar = ({
         },
       }}
     >
+
       <Toolbar
         sx={{
           minHeight: "68px !important",
           height: 68,
-          px: collapsed ? 1.5 : 2,
+          px: isMobile ? 1.5 : collapsed ? 1.5 : 2,
           borderBottom: `1px solid ${borderColor}`,
           backgroundColor: bgColor,
-          justifyContent: collapsed ? "center" : "flex-start",
-          gap: 1.3,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",  
+          gap: 1,
         }}
       >
-        {brandIcon && (
-          <Box
-            sx={{
-              width: 38,
-              height: 38,
-              flexShrink: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              borderRadius: "10px",
-              background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
-              boxShadow: `0 6px 18px ${accentColor}45`,
-            }}
-          >
-            {brandIcon}
-          </Box>
-        )}
+        {/* LEFT: brand icon + label */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.2,
+            minWidth: 0,
+            flex: 1,
+            overflow: "hidden",
+          }}
+        >
+          {brandIcon && (
+            <Box
+              sx={{
+                width: 38,
+                height: 38,
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: "10px",
+                background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
+                boxShadow: `0 6px 18px ${accentColor}45`,
+              }}
+            >
+              {brandIcon}
+            </Box>
+          )}
 
-        {!collapsed && (
-          <Typography
+          {!collapsed && (
+            <Typography
+              sx={{
+                fontSize: "0.9rem",
+                fontWeight: 800,
+                color: "#FFFFFF",
+                letterSpacing: "0.3px",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {brandLabel}
+            </Typography>
+          )}
+        </Box>
+
+        {/* RIGHT: close button — sirf mobile */}
+        {isMobile && !collapsed && (
+          <IconButton
+            onClick={onClose}
+            aria-label="Close sidebar"
+            size="small"
             sx={{
-              fontSize: "0.95rem",
-              fontWeight: 800,
-              color: "#FFFFFF",
-              letterSpacing: "0.3px",
-              whiteSpace: "nowrap",
+              width: 32,
+              height: 32,
+              flexShrink: 0,
+              borderRadius: "8px",
+              color: "#CBD5E1",
+              backgroundColor: "transparent",
+              "&:hover": {
+                backgroundColor: "#202C42",
+                color: "#FFFFFF",
+              },
             }}
           >
-            {brandLabel}
-          </Typography>
+            <CloseRoundedIcon sx={{ fontSize: 18 }} />
+          </IconButton>
         )}
       </Toolbar>
 

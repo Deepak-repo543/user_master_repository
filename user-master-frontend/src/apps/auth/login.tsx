@@ -17,7 +17,6 @@ import { jwtDecode } from "jwt-decode";
 const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
-
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -48,9 +47,8 @@ const Login = () => {
                     roles: decodedToken.roles,
                 }),
             );
-
+            sessionStorage.setItem("justLoggedIn", "true");
             const from = location.state?.from?.pathname || "/dashboard";
-
             navigate(from, { replace: true });
         } catch (error: any) {
             setError(
