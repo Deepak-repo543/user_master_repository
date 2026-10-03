@@ -1,8 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
-import * as am5 from "@amcharts/amcharts5";
-import * as am5xy from "@amcharts/amcharts5/xy";
-import * as am5radar from "@amcharts/amcharts5/radar";
-import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
+import React from "react";
 
 interface GaugeChartProps {
   value: number;
@@ -12,21 +8,13 @@ interface GaugeChartProps {
   height?: number;
   color?: string;
   backgroundColor?: string;
-  segments?: { value: number; color: string }[];
   showValue?: boolean;
   valueSuffix?: string;
-  subtitle?: string;
+  badge?: string;
+  trend?: { value: number; label?: string };
 }
 
-const DEFAULT_SEGMENTS = [
-  { value: 20, color: "#EF4444" },
-  { value: 40, color: "#F59E0B" },
-  { value: 60, color: "#FBBF24" },
-  { value: 80, color: "#34D399" },
-  { value: 100, color: "#10B981" },
-];
-
-const GaugeChart = ({
+const GaugeChart: React.FC<GaugeChartProps> = ({
   value,
   min = 0,
   max = 100,
@@ -34,259 +22,241 @@ const GaugeChart = ({
   height = 350,
   color = "#4F46E5",
   backgroundColor = "#FFFFFF",
-  segments = DEFAULT_SEGMENTS,
   showValue = true,
   valueSuffix = "%",
-  subtitle = "",
-}: GaugeChartProps) => {
-  const chartRef = useRef<HTMLDivElement>(null);
+  badge = "USER ANALYTICS",
+  trend,
+}) => {
   const safeValue = Math.min(Math.max(value, min), max);
+  const range = max - min;
+  const percentage = range > 0 ? (safeValue - min) / range : 0;
+  const radius = 128;
+  const centerX = 160;
+  const centerY = 175;
+  const strokeWidth = 14;
+  const angle = Math.PI + percentage * Math.PI;
+  const endX = centerX + radius * Math.cos(angle);
+  const endY = centerY + radius * Math.sin(angle);
+  const largeArcFlag = percentage > 0.5 ? 1 : 0;
   const displayValue = Math.round(safeValue);
-
-  useLayoutEffect(() => {
-    if (!chartRef.current) return;
-    const root = am5.Root.new(chartRef.current);
-    root.setThemes([am5themes_Animated.new(root)]);
-    const chart = root.container.children.push(
-      am5radar.RadarChart.new(root, {
-        panX: false,
-        panY: false,
-        startAngle: 180,
-        endAngle: 360,
-        innerRadius: am5.percent(50),
-  
-        paddingTop: 30,
-        paddingBottom: 30,
-        paddingLeft: 20,
-        paddingRight: 20,
-      })
-    );
-
-    chart.set(
-      "background",
-      am5.Rectangle.new(root, {
-        fill: am5.color(backgroundColor),
-        fillOpacity: 1,
-      })
-    );
-
-    if (title) {
-      chart.children.unshift(
-        am5.Label.new(root, {
-          text: title,
-          fontSize: 18,
-          fontWeight: "600",
-          fill: am5.color(0x172033),
-          centerX: am5.percent(50),
-          x: am5.percent(50),
-          y: 0,
-          paddingTop: 0,
-          paddingBottom: 10,
-        })
-      );
-    }
-
-    const axisRenderer = am5radar.AxisRendererCircular.new(root, {
-      innerRadius: -30,
-      strokeOpacity: 1,
-      strokeWidth: 15,
-      strokeGradient: am5.LinearGradient.new(root, {
-        rotation: 0,
-        stops: [
-          { color: am5.color(0x19d228) },
-          { color: am5.color(0xf4fb16) },
-          { color: am5.color(0xf6d32b) },
-          { color: am5.color(0xfb7116) }
-        ]
-      })
-    });
-
-    axisRenderer.labels.template.setAll({
-      fill: am5.color(0x64748b),
-      fontSize: 12,
-      radius: 25,
-    });
-
-    axisRenderer.grid.template.setAll({
-      strokeOpacity: 0,
-    });
-
-    const axis = chart.xAxes.push(
-      am5xy.ValueAxis.new(root, {
-        min,
-        max,
-        strictMinMax: true,
-        renderer: axisRenderer,
-        numberFormat: "#",
-      })
-    );
-
-    let prevValue = min;
-    const segmentColors = segments.length > 0 ? segments : DEFAULT_SEGMENTS;
-    segmentColors.forEach((segment) => {
-      const segmentValue = Math.min(segment.value, max);
-      const dataItem = axis.makeDataItem({
-        value: prevValue,
-        endValue: segmentValue,
-      });
-
-      axis.createAxisRange(dataItem);
-      const fill = dataItem.get("axisFill");
-      if (fill) {
-        fill.setAll({
-          visible: true,
-          fill: am5.color(segment.color),
-          fillOpacity: 0.3,
-          strokeOpacity: 0,
-        });
-      }
-
-      const label = dataItem.get("label");
-      if (label) {
-        label.setAll({
-          forceHidden: true,
-        });
-      }
-      prevValue = segmentValue;
-    });
-
-    const activeDataItem = axis.makeDataItem({
-      value: min,
-      endValue: safeValue,
-    });
-
-    axis.createAxisRange(activeDataItem);
-    const activeFill = activeDataItem.get("axisFill");
-    if (activeFill) {
-      activeFill.setAll({
-        visible: true,
-        fill: am5.color(color),
-        fillOpacity: 0.2,
-        strokeOpacity: 0,
-      });
-    }
-
-    const hand = am5radar.ClockHand.new(root, {
-      pinRadius: 12,
-      radius: am5.percent(95),
-      innerRadius: 0,
-      bottomWidth: 12,
-      topWidth: 3,
-    });
-
-    hand.hand.setAll({
-      fill: am5.color(0x1e293b),
-      stroke: am5.color(0x1e293b),
-    });
-
-    hand.pin.setAll({
-      fill: am5.color(0x1e293b),
-      stroke: am5.color(0x1e293b),
-    });
-
-    activeDataItem.set(
-      "bullet",
-      am5xy.AxisBullet.new(root, {
-        sprite: hand,
-      })
-    );
-
-    const labelValues = [50, 60, 70, 80, 90, 100];
-    labelValues.forEach((val) => {
-      if (val >= min && val <= max) {
-        const labelDataItem = axis.makeDataItem({
-          value: val,
-        });
-        axis.createAxisRange(labelDataItem);
-
-        const label = labelDataItem.get("label");
-        if (label) {
-          label.setAll({
-            text: `${val}%`,
-            fill: am5.color(0x64748b),
-            fontSize: 11,
-            fontWeight: "500",
-          });
-        }
-      }
-    });
-
-    activeDataItem.animate({
-      key: "endValue",
-      to: safeValue,
-      duration: 1200,
-      easing: am5.ease.out(am5.ease.cubic),
-    });
-
-    activeDataItem.animate({
-      key: "value",
-      to: safeValue,
-      duration: 1200,
-      easing: am5.ease.out(am5.ease.cubic),
-    });
-
-    chart.appear(800, 100);
-
-    return () => {
-      root.dispose();
-    };
-  }, [value, min, max, title, color, backgroundColor, segments, valueSuffix]);
+  const isTrendUp = trend ? trend.value >= 0 : false;
+  const trendColor = isTrendUp ? "#16A34A" : "#DC2626";
+  const trendBg = isTrendUp ? "#DCFCE7" : "#FEE2E2";
+  const trendArrow = isTrendUp ? "▲" : "▼";
 
   return (
     <div
       style={{
         width: "100%",
         height,
-        borderRadius: 12,
-        overflow: "visible",
         background: backgroundColor,
-        position: "relative",
+        borderRadius: 16,
+        padding: "22px 24px",
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        fontFamily:
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        boxShadow: "0 1px 3px rgba(15, 23, 42, 0.06)",
       }}
     >
+      {/* ---------- Header ---------- */}
       <div
-        ref={chartRef}
         style={{
-          width: "100%",
-          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 4,
         }}
-      />
-
-      {(showValue || subtitle) && (
+      >
         <div
           style={{
-            position: "absolute",
-            left: "50%",
-            bottom: "2%",
-            transform: "translateX(-50%)",
-            textAlign: "center",
-            pointerEvents: "none",
+            fontSize: 18,
+            fontWeight: 600,
+            color: "#0F172A",
+            letterSpacing: "-0.01em",
           }}
         >
+          {title}
+        </div>
+
+        {badge && (
+          <div
+            style={{
+              background: "#EEF2FF",
+              color: "#4F46E5",
+              padding: "5px 11px",
+              borderRadius: 8,
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+            }}
+          >
+            {badge}
+          </div>
+        )}
+      </div>
+
+      {/* ---------- Gauge ---------- */}
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <svg
+          viewBox="0 0 320 210"
+          width="100%"
+          height="100%"
+          preserveAspectRatio="xMidYMid meet"
+          style={{ display: "block" }}
+        >
+          <defs>
+            {/* Gradient for the arc */}
+            <linearGradient
+              id="gaugeGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="0%"
+            >
+              <stop offset="0%" stopColor="#A5B4FC" />
+              <stop offset="60%" stopColor={color} />
+              <stop offset="100%" stopColor={color} />
+            </linearGradient>
+
+            {/* Soft glow */}
+            <filter id="gaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Background track */}
+          <path
+            d="M 32 175 A 128 128 0 0 1 288 175"
+            fill="none"
+            stroke="#EEF1F6"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+
+          {/* Tick marks (subtle) */}
+          {[0, 0.25, 0.5, 0.75, 1].map((t) => {
+            const tickAngle = Math.PI + t * Math.PI;
+            const x1 = centerX + (radius + 12) * Math.cos(tickAngle);
+            const y1 = centerY + (radius + 12) * Math.sin(tickAngle);
+            const x2 = centerX + (radius + 18) * Math.cos(tickAngle);
+            const y2 = centerY + (radius + 18) * Math.sin(tickAngle);
+            return (
+              <line
+                key={t}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
+                stroke="#CBD5E1"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+              />
+            );
+          })}
+
+          {/* Active arc */}
+          {percentage > 0 && (
+            <path
+              d={`M 32 175 A 128 128 0 ${largeArcFlag} 1 ${endX} ${endY}`}
+              fill="none"
+              stroke="url(#gaugeGradient)"
+              strokeWidth={strokeWidth}
+              strokeLinecap="round"
+              filter="url(#gaugeGlow)"
+            />
+          )}
+
+          {/* Center value */}
           {showValue && (
-            <div
-              style={{
-                fontSize: 38,
-                fontWeight: 700,
-                color: "#172033",
-                lineHeight: 1.1,
-              }}
-            >
-              {displayValue}
-              {valueSuffix}
-            </div>
+            <>
+              <text
+                x={centerX}
+                y={140}
+                textAnchor="middle"
+                fontSize="48"
+                fontWeight="700"
+                fill="#0F172A"
+                letterSpacing="-0.02em"
+              >
+                {displayValue}
+                {valueSuffix}
+              </text>
+            </>
           )}
-          {subtitle && (
-            <div
+
+          {/* Min / Max labels */}
+          <text x="29" y="205" fontSize="11" fill="#94A3B8" fontWeight="500">
+            {min}
+            {valueSuffix}
+          </text>
+          <text
+            x="291"
+            y="205"
+            textAnchor="end"
+            fontSize="11"
+            fill="#94A3B8"
+            fontWeight="500"
+          >
+            {max}
+            {valueSuffix}
+          </text>
+        </svg>
+      </div>
+
+      {/* ---------- Trend footer (optional) ---------- */}
+      {trend && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "#F8FAFC",
+            border: "1px solid #EEF1F6",
+            borderRadius: 10,
+            padding: "10px 14px",
+            marginTop: 8,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span
               style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
                 fontSize: 13,
-                fontWeight: 500,
-                color: "#94a3b8",
-                marginTop: 2,
+                fontWeight: 700,
+                color: trendColor,
+                background: trendBg,
+                padding: "3px 8px",
+                borderRadius: 6,
               }}
             >
-              {subtitle}
-            </div>
-          )}
+              {trendArrow} {Math.abs(trend.value)}%
+            </span>
+            <span style={{ fontSize: 12, color: "#64748B" }}>
+              {trend.label ?? "vs last period"}
+            </span>
+          </div>
+
+          <span style={{ fontSize: 12, color: "#94A3B8", fontWeight: 500 }}>
+            {displayValue}
+            {valueSuffix} now
+          </span>
         </div>
       )}
     </div>

@@ -10,6 +10,17 @@ interface GaugeChartProps {
   height?: number;
 }
 
+const getMajorTickCount = (min: number, max: number) => {
+  const range = Math.max(max - min, 1);
+  for (let intervals = 6; intervals >= 4; intervals--) {
+    if (range % intervals === 0) return intervals + 1;
+  }
+  for (let intervals = 7; intervals <= 10; intervals++) {
+    if (range % intervals === 0) return intervals + 1;
+  }
+  return Math.min(range, 6) + 1;
+};
+
 const GaugeChart = ({
   value,
   min = 0,
@@ -21,6 +32,7 @@ const GaugeChart = ({
   const range = max - min || 1;
   const band1End = min + range / 3;
   const band2End = min + (range * 2) / 3;
+  const majorCount = getMajorTickCount(min, max);
 
   const options: ApexOptions = {
     chart: {
@@ -47,7 +59,7 @@ const GaugeChart = ({
         ticks: {
           show: true,
           major: {
-            count: 11,
+            count: majorCount,
             length: 8,
             width: 2,
             color: "#334155",
@@ -65,8 +77,10 @@ const GaugeChart = ({
             offset: 6,
             fontSize: "11px",
             color: "#334155",
+            formatter: (val: number | string) =>
+              String(Math.round(Number(val) * 10) / 10),
           },
-        },
+        } as any,
         needle: {
           color: "#0F172A",
           length: "60%",
