@@ -600,41 +600,11 @@ const ArrayForm: React.FC<ArrayFormProps> = ({
     name: "users",
   });
 
-  const allBranchIds = React.useMemo(() => branches.map((b) => b.id), [branches]);
-  const allModuleIds = React.useMemo(() => modules.map((m) => m.id), [modules]);
-
-  const hasAutoSelectedRef = React.useRef(false);
-
-  React.useEffect(() => {
-    if (hasAutoSelectedRef.current) return;
-    if (allBranchIds.length === 0 && allModuleIds.length === 0) return;
-    if (typeof getValues !== "function" || typeof setValue !== "function") {
-      console.warn(
-        "[ArrayForm] `getValues` prop is missing — pass `getValues` from your parent's useForm() to enable auto-select of branches/modules."
-      );
-      return;
-    }
-
-    fields.forEach((_, idx) => {
-      const currentBranchIds = getValues(`users.${idx}.branchIds`);
-      const currentModules = getValues(`users.${idx}.accessibleModules`);
-
-      if (!currentBranchIds || currentBranchIds.length === 0) {
-        setValue(`users.${idx}.branchIds`, allBranchIds, { shouldValidate: false });
-      }
-      if (!currentModules || currentModules.length === 0) {
-        setValue(`users.${idx}.accessibleModules`, allModuleIds, { shouldValidate: false });
-      }
-    });
-
-    hasAutoSelectedRef.current = true;
-  }, [allBranchIds, allModuleIds]);
-
   const handleAddUser = () => {
     append({
       ...emptyUserEntry,
-      branchIds: allBranchIds,
-      accessibleModules: allModuleIds,
+      branchIds: [],
+      accessibleModules: [],
       status: false,
     });
   };

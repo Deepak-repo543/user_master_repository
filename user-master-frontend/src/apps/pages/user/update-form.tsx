@@ -290,6 +290,7 @@ const UpdateUserForm: React.FC<UpdateUserFormProps> = ({
           width: "100%",
           height: "100%",
           display: "flex",
+          minHeight: 0,
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
@@ -399,13 +400,14 @@ const UpdateUserForm: React.FC<UpdateUserFormProps> = ({
 
       {/* Scrollable Content */}
       <Box
-        sx={{
-          flex: 1,
-          overflowY: "auto",
-          px: { xs: 1.5, sm: 2.5, md: 3 },
-          py: { xs: 1.5, sm: 2, md: 2.5 },
-        }}
-      >
+  sx={{
+    flex: 1,
+    minHeight: 0,
+    overflowY: "auto",
+    px: { xs: 1.5, sm: 2.5, md: 3 },
+    py: { xs: 1.5, sm: 2, md: 2.5 },
+  }}
+>
         <Box
           component="form"
           onSubmit={handleSubmit(handleFormSubmit)}
