@@ -15,22 +15,29 @@ const Login = () => {
     const [error, setError] = useState("");
 
     const handleLogin = async () => {
-        if (!username.trim() || !password) {
+        if (!username.trim() && !password) {
             setError("Username and password are required.");
+            return;
+        }
+
+        if (!username.trim()) {
+            setError("Username is required.");
+            return;
+        }
+
+        if (!password) {
+            setError("Password is required.");
             return;
         }
 
         try {
             setLoading(true);
             setError("");
-
             const loginResponse = await userService.login({
                 username: username.trim(),
                 password,
             });
-
             const decodedToken: any = jwtDecode(loginResponse.token);
-
             localStorage.setItem(
                 "user",
                 JSON.stringify({
@@ -39,9 +46,7 @@ const Login = () => {
                     roles: decodedToken.roles,
                 }),
             );
-
             sessionStorage.setItem("justLoggedIn", "true");
-
             const from = location.state?.from?.pathname || "/dashboard";
             navigate(from, { replace: true });
         } catch (error: any) {
@@ -141,7 +146,7 @@ const Login = () => {
                                     "0 10px 24px rgba(37, 99, 235, 0.25)",
                             }}
                         >
-                            <PersonOutlined 
+                            <PersonOutlined
                                 sx={{
                                     color: "#FFFFFF",
                                     fontSize: 30,
@@ -220,7 +225,7 @@ const Login = () => {
                             input: {
                                 startAdornment: (
                                     <InputAdornment position="start">
-                                        <PersonOutlined 
+                                        <PersonOutlined
                                             sx={{
                                                 color: "#94A3B8",
                                                 fontSize: 21,
@@ -301,7 +306,10 @@ const Login = () => {
                     <Button
                         fullWidth
                         variant="contained"
-                        onClick={handleLogin}
+                        onClick={() => {
+                            console.log("LOGIN BUTTON CLICKED");
+                            handleLogin();
+                        }}
                         disabled={loading}
                         sx={{
                             mt: 3,
