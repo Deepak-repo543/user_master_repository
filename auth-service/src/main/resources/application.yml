@@ -4,3 +4,4 @@ spring:
 
   config:
     import: "${CONFIG_SERVER_URL:configserver:http://config-server:8888}"
+

@@ -1,6 +1,0 @@
-spring:
-  application:
-    name: common-service
-
-  config:
-    import: "configserver:http://localhost:8888"

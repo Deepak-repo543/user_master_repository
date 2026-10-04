@@ -223,168 +223,64 @@ public class UserService {
 
     private UserResponseDto mapToResponseDto(User user) {
         UserResponseDto dto = new UserResponseDto();
-
         BeanUtils.copyProperties(user, dto);
-
-        // Branch
         try {
             if (!CollectionUtils.isEmpty(user.getBranchIds())) {
-
-                ApiResponse<List<BranchResponse>> response =
-                        masterServiceClient.getBranches();
-
+                ApiResponse<List<BranchResponse>> response = masterServiceClient.getBranches();
                 if (response != null && response.getData() != null) {
-
-                    Map<Long, String> branchMap = response.getData().stream()
-                            .collect(Collectors.toMap(
-                                    BranchResponse::getId,
-                                    BranchResponse::getBranchName,
-                                    (a, b) -> a
-                            ));
-
-                    dto.setBranchNames(
-                            user.getBranchIds().stream()
-                                    .map(branchMap::get)
-                                    .filter(Objects::nonNull)
-                                    .toList()
-                    );
-
-                } else {
-                    dto.setBranchNames(List.of());
-                }
-
-            } else {
-                dto.setBranchNames(List.of());
-            }
-
+                    Map<Long, String> branchMap = response.getData().stream().collect(Collectors.toMap(BranchResponse::getId, BranchResponse::getBranchName, (a, b) -> a));
+                    dto.setBranchNames(user.getBranchIds().stream().map(branchMap::get).filter(Objects::nonNull).toList());
+                } else dto.setBranchNames(List.of());
+            } else dto.setBranchNames(List.of());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to fetch branch names for user: {}", user.getUserId(), e);
             dto.setBranchNames(List.of());
         }
-
-        // Modules
         try {
             if (!CollectionUtils.isEmpty(user.getAccessibleModules())) {
-
-                ApiResponse<List<ModuleResponse>> response =
-                        masterServiceClient.getModules();
-
+                ApiResponse<List<ModuleResponse>> response = masterServiceClient.getModules();
                 if (response != null && response.getData() != null) {
-
-                    Map<Long, String> moduleMap = response.getData().stream()
-                            .collect(Collectors.toMap(
-                                    ModuleResponse::getId,
-                                    ModuleResponse::getModuleName,
-                                    (a, b) -> a
-                            ));
-
-                    dto.setModuleNames(
-                            user.getAccessibleModules().stream()
-                                    .map(moduleMap::get)
-                                    .filter(Objects::nonNull)
-                                    .toList()
-                    );
-
-                } else {
-                    dto.setModuleNames(List.of());
-                }
-
-            } else {
-                dto.setModuleNames(List.of());
-            }
+                    Map<Long, String> moduleMap = response.getData().stream().collect(Collectors.toMap(ModuleResponse::getId, ModuleResponse::getModuleName, (a, b) -> a));
+                    dto.setModuleNames(user.getAccessibleModules().stream().map(moduleMap::get).filter(Objects::nonNull).toList());
+                } else dto.setModuleNames(List.of());
+            } else dto.setModuleNames(List.of());
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to fetch module names for user: {}", user.getUserId(), e);
             dto.setModuleNames(List.of());
         }
-
-        // Department
         try {
             if (Objects.nonNull(user.getDepartmentId())) {
-
-                ApiResponse<List<DepartmentResponse>> response =
-                        masterServiceClient.getDepartments();
-
+                ApiResponse<List<DepartmentResponse>> response = masterServiceClient.getDepartments();
                 if (response != null && response.getData() != null) {
-
-                    response.getData().stream()
-                            .filter(department ->
-                                    Objects.equals(
-                                            department.getId(),
-                                            user.getDepartmentId()
-                                    )
-                            )
-                            .findFirst()
-                            .ifPresent(department ->
-                                    dto.setDepartmentName(
-                                            department.getDepartmentName()
-                                    )
-                            );
+                    response.getData().stream().filter(department -> Objects.equals(department.getId(), user.getDepartmentId())).findFirst().ifPresent(department -> dto.setDepartmentName(department.getDepartmentName()));
                 }
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to fetch department name for user: {}", user.getUserId(), e);
         }
-
-        // Role
         try {
             if (Objects.nonNull(user.getRoleId())) {
-
-                ApiResponse<List<RoleResponse>> response =
-                        masterServiceClient.getRoles();
-
+                ApiResponse<List<RoleResponse>> response = masterServiceClient.getRoles();
                 if (response != null && response.getData() != null) {
-
-                    response.getData().stream()
-                            .filter(role ->
-                                    Objects.equals(
-                                            role.getId(),
-                                            user.getRoleId()
-                                    )
-                            )
-                            .findFirst()
-                            .ifPresent(role ->
-                                    dto.setRoleName(
-                                            role.getRoleName()
-                                    )
-                            );
+                    response.getData().stream().filter(role -> Objects.equals(role.getId(), user.getRoleId())).findFirst().ifPresent(role -> dto.setRoleName(role.getRoleName()));
                 }
             }
-
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to fetch role name for user: {}", user.getUserId(), e);
         }
-
-        // Designation
         try {
             if (Objects.nonNull(user.getDesignationId())) {
-
-                ApiResponse<List<DesignationResponse>> response =
-                        masterServiceClient.getDesignations();
-
+                ApiResponse<List<DesignationResponse>> response = masterServiceClient.getDesignations();
                 if (response != null && response.getData() != null) {
-
-                    response.getData().stream()
-                            .filter(designation ->
-                                    Objects.equals(
-                                            designation.getId(),
-                                            user.getDesignationId()
-                                    )
-                            )
-                            .findFirst()
-                            .ifPresent(designation ->
-                                    dto.setDesignationName(
-                                            designation.getDesignationName()
-                                    )
-                            );
+                    response.getData().stream().filter(designation -> Objects.equals(designation.getId(), user.getDesignationId())).findFirst().ifPresent(designation -> dto.setDesignationName(designation.getDesignationName()));
                 }
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Failed to fetch designation name for user: {}", user.getUserId(), e);
         }
-
         return dto;
     }
 
@@ -396,257 +292,67 @@ public class UserService {
         return ResponseEntity.ok(new ApiResponse<>(200, "Department-wise user count fetched successfully", data, null));
     }
 
-    public ResponseEntity<ApiResponse<Page<UserResponseDto>>> searchUsers(
-            UserSearchRequestDto filter) {
-
-        String search = StringUtils.hasText(filter.getSearch())
-                ? filter.getSearch().trim()
-                : null;
-
-        String employeeName = StringUtils.hasText(filter.getEmployeeName())
-                ? filter.getEmployeeName().trim()
-                : null;
-
-        String branch = StringUtils.hasText(filter.getBranch())
-                ? filter.getBranch().trim()
-                : null;
-
+    public ResponseEntity<ApiResponse<Page<UserResponseDto>>> searchUsers(UserSearchRequestDto filter) {
+        String search = StringUtils.hasText(filter.getSearch()) ? filter.getSearch().trim() : null;
+        String employeeName = StringUtils.hasText(filter.getEmployeeName()) ? filter.getEmployeeName().trim() : null;
+        String branch = StringUtils.hasText(filter.getBranch()) ? filter.getBranch().trim() : null;
         Long branchId = null;
-
         if (branch != null) {
             try {
                 branchId = Long.parseLong(branch);
             } catch (NumberFormatException e) {
-
-                ApiResponse<Page<UserResponseDto>> response =
-                        new ApiResponse<>(
-                                HttpStatus.BAD_REQUEST.value(),
-                                "Invalid branch id",
-                                Page.empty(),
-                                null
-                        );
-
+                ApiResponse<Page<UserResponseDto>> response = new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Invalid branch id", Page.empty(), null);
                 return ResponseEntity.badRequest().body(response);
             }
         }
-
-        boolean hasAdvancedFilter =
-                filter.getStatus() != null
-                        || filter.getDepartmentId() != null
-                        || filter.getDesignationId() != null
-                        || filter.getRoleId() != null
-                        || StringUtils.hasText(employeeName)
-                        || branchId != null
-                        || StringUtils.hasText(filter.getFromDate())
-                        || StringUtils.hasText(filter.getToDate());
-
+        boolean hasAdvancedFilter = filter.getStatus() != null || filter.getDepartmentId() != null || filter.getDesignationId() != null || filter.getRoleId() != null || StringUtils.hasText(employeeName) || branchId != null || StringUtils.hasText(filter.getFromDate()) || StringUtils.hasText(filter.getToDate());
         if (!hasAdvancedFilter && !StringUtils.hasText(search)) {
-
-            ApiResponse<Page<UserResponseDto>> response =
-                    new ApiResponse<>(
-                            HttpStatus.BAD_REQUEST.value(),
-                            "Please enter at least 2 characters or select a filter",
-                            Page.empty(),
-                            null
-                    );
-
+            ApiResponse<Page<UserResponseDto>> response = new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Please enter at least 2 characters or select a filter", Page.empty(), null);
             return ResponseEntity.badRequest().body(response);
         }
-
-        if (!hasAdvancedFilter
-                && StringUtils.hasText(search)
-                && search.length() < 2) {
-
-            ApiResponse<Page<UserResponseDto>> response =
-                    new ApiResponse<>(
-                            HttpStatus.BAD_REQUEST.value(),
-                            "Search must contain at least 2 characters",
-                            Page.empty(),
-                            null
-                    );
-
+        if (!hasAdvancedFilter && StringUtils.hasText(search) && search.length() < 2) {
+            ApiResponse<Page<UserResponseDto>> response = new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Search must contain at least 2 characters", Page.empty(), null);
             return ResponseEntity.badRequest().body(response);
         }
-
         LocalDate fromDate = null;
         LocalDate toDate = null;
-
         try {
-
-            if (StringUtils.hasText(filter.getFromDate())) {
-                fromDate = LocalDate.parse(filter.getFromDate().trim());
-            }
-
-            if (StringUtils.hasText(filter.getToDate())) {
-                toDate = LocalDate.parse(filter.getToDate().trim());
-            }
-
+            if (StringUtils.hasText(filter.getFromDate())) fromDate = LocalDate.parse(filter.getFromDate().trim());
+            if (StringUtils.hasText(filter.getToDate())) toDate = LocalDate.parse(filter.getToDate().trim());
         } catch (DateTimeParseException e) {
-
-            ApiResponse<Page<UserResponseDto>> response =
-                    new ApiResponse<>(
-                            HttpStatus.BAD_REQUEST.value(),
-                            "Invalid date format. Use yyyy-MM-dd",
-                            Page.empty(),
-                            null
-                    );
-
+            ApiResponse<Page<UserResponseDto>> response = new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Invalid date format. Use yyyy-MM-dd", Page.empty(), null);
             return ResponseEntity.badRequest().body(response);
         }
-
-        if (fromDate != null
-                && toDate != null
-                && fromDate.isAfter(toDate)) {
-
-            ApiResponse<Page<UserResponseDto>> response =
-                    new ApiResponse<>(
-                            HttpStatus.BAD_REQUEST.value(),
-                            "From date cannot be greater than to date",
-                            Page.empty(),
-                            null
-                    );
-
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            ApiResponse<Page<UserResponseDto>> response = new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "From date cannot be greater than to date", Page.empty(), null);
             return ResponseEntity.badRequest().body(response);
         }
-
-        int page = Math.max(
-                filter.getPage() == null ? 0 : filter.getPage(),
-                0
-        );
-
-        int size = Math.max(
-                filter.getSize() == null ? 10 : filter.getSize(),
-                1
-        );
-
+        int page = Math.max(filter.getPage() == null ? 0 : filter.getPage(), 0);
+        int size = Math.max(filter.getSize() == null ? 10 : filter.getSize(), 1);
         String sortBy = filter.getSortBy();
-
-        if (sortBy == null || sortBy.isBlank()) {
-            sortBy = "id";
-        }
-
-        Sort.Direction direction =
-                "desc".equalsIgnoreCase(filter.getDirection())
-                        ? Sort.Direction.DESC
-                        : Sort.Direction.ASC;
-
-        Pageable pageable =
-                PageRequest.of(
-                        page,
-                        size,
-                        Sort.by(direction, sortBy)
-                );
-
-        System.out.println("========== SEARCH REQUEST ==========");
-        System.out.println("search = " + search);
-        System.out.println("status = " + filter.getStatus());
-        System.out.println("departmentId = " + filter.getDepartmentId());
-        System.out.println("designationId = " + filter.getDesignationId());
-        System.out.println("roleId = " + filter.getRoleId());
-        System.out.println("employeeName = " + employeeName);
-        System.out.println("branchId = " + branchId);
-        System.out.println("fromDate = " + fromDate);
-        System.out.println("toDate = " + toDate);
-        System.out.println("page = " + page);
-        System.out.println("size = " + size);
-        System.out.println("sortBy = " + sortBy);
-        System.out.println("direction = " + direction);
-
+        if (sortBy == null || sortBy.isBlank()) sortBy = "id";
+        Sort.Direction direction = "desc".equalsIgnoreCase(filter.getDirection()) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
         Page<User> result;
-
         try {
-
-            System.out.println("========== BEFORE DATABASE QUERY ==========");
-
-            result = userRepository.searchUsersForFilter(
-                    search,
-                    filter.getStatus(),
-                    filter.getDepartmentId(),
-                    filter.getDesignationId(),
-                    filter.getRoleId(),
-                    employeeName,
-                    branchId,
-                    fromDate,
-                    toDate,
-                    pageable
-            );
-
-            System.out.println("========== AFTER DATABASE QUERY ==========");
-            System.out.println("TOTAL USERS = " + result.getTotalElements());
-            System.out.println("CURRENT PAGE SIZE = " + result.getContent().size());
-
+            result = userRepository.searchUsersForFilter(search, filter.getStatus(), filter.getDepartmentId(), filter.getDesignationId(), filter.getRoleId(), employeeName, branchId, fromDate, toDate, pageable);
         } catch (Exception e) {
-
-            System.out.println("========== DATABASE ERROR ==========");
-            e.printStackTrace();
-
-            ApiResponse<Page<UserResponseDto>> response =
-                    new ApiResponse<>(
-                            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                            "Error while fetching users: " + e.getMessage(),
-                            Page.empty(),
-                            null
-                    );
-
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(response);
+            log.error("Error while fetching users", e);
+            ApiResponse<Page<UserResponseDto>> response = new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error while fetching users: " + e.getMessage(), Page.empty(), null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
-
         Page<UserResponseDto> responsePage;
-
         try {
-
-            System.out.println("========== BEFORE DTO MAPPING ==========");
-
-            responsePage = result.map(user -> {
-
-                System.out.println(
-                        "MAPPING USER ID = " + user.getUserId()
-                );
-
-                return mapToResponseDto(user);
-            });
-
-            System.out.println("========== AFTER DTO MAPPING ==========");
-            System.out.println(
-                    "DTO SIZE = " + responsePage.getContent().size()
-            );
-
+            responsePage = result.map(this::mapToResponseDto);
         } catch (Exception e) {
-
-            System.out.println("========== DTO MAPPING ERROR ==========");
-            e.printStackTrace();
-
-            ApiResponse<Page<UserResponseDto>> response =
-                    new ApiResponse<>(
-                            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                            "Error while mapping user response: " + e.getMessage(),
-                            Page.empty(),
-                            null
-                    );
-
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(response);
+            log.error("Error while mapping user response", e);
+            ApiResponse<Page<UserResponseDto>> response = new ApiResponse<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error while mapping user response: " + e.getMessage(), Page.empty(), null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
-
-        ApiResponse<Page<UserResponseDto>> response =
-                new ApiResponse<>(
-                        HttpStatus.OK.value(),
-                        "Users fetched successfully",
-                        responsePage,
-                        null
-                );
-
-        System.out.println("========== BEFORE RESPONSE ==========");
-        System.out.println(
-                "RESPONSE DATA SIZE = "
-                        + responsePage.getContent().size()
-        );
-
+        ApiResponse<Page<UserResponseDto>> response = new ApiResponse<>(HttpStatus.OK.value(), "Users fetched successfully", responsePage, null);
         return ResponseEntity.ok(response);
     }
+
     private User buildUserEntity(UserRequestDto request, List<User> existingMatches) {
         if (Objects.isNull(request)) throw new AppException(400, "User request cannot be null", HttpStatus.BAD_REQUEST);
         User user = Objects.nonNull(request.getId()) ? userRepository.findByIdAndIsDeletedFalse(request.getId()).orElseThrow(() -> new AppException(404, "User not found", HttpStatus.NOT_FOUND)) : new User();
