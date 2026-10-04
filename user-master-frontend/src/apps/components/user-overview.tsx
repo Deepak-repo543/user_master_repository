@@ -66,7 +66,7 @@ const StatCard = ({
         position: "relative",
         width: "100%",
         height: "100%",
-        minHeight: 128,
+        minHeight: 160,
         p: 2,
         pl: 2.5,
         boxSizing: "border-box",
