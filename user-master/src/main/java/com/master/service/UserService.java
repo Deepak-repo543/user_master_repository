@@ -404,7 +404,7 @@ public class UserService {
             if (Objects.nonNull(request.getUserId()) && request.getUserId().equalsIgnoreCase(existing.getUserId()))
                 throw new AppException(409, "User id already exists. " + request.getUserId(), HttpStatus.CONFLICT);
             if (Objects.nonNull(request.getEmployeeId()) && request.getEmployeeId().equals(existing.getEmployeeId()))
-                throw new AppException(409, "Duplicate Employee ID found " + request.getEmployeeId(), HttpStatus.CONFLICT);
+                throw new AppException(409, "Employee " + existing.getFullName() + " - " + existing.getEmployeeCode() + " already exists.", HttpStatus.CONFLICT);
             if (Objects.nonNull(request.getEmployeeCode()) && request.getEmployeeCode().equalsIgnoreCase(existing.getEmployeeCode()))
                 throw new AppException(409, "Duplicate Employee Code found " + request.getEmployeeCode(), HttpStatus.CONFLICT);
             if (Objects.nonNull(request.getEmail()) && request.getEmail().equalsIgnoreCase(existing.getEmail()))
