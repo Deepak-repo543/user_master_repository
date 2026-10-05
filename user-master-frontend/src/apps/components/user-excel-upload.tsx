@@ -1,17 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  CircularProgress,
-  Typography,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-} from "@mui/material";
+import { Alert, Box, Button, Chip, CircularProgress, Typography, Dialog, DialogTitle, DialogContent, DialogActions, IconButton,} from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ReactMaterialTable from "@/components/react-material-table";
 import CloudUploadRoundedIcon from "@mui/icons-material/CloudUploadRounded";
@@ -22,12 +10,7 @@ import WarningRoundedIcon from "@mui/icons-material/WarningRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import DescriptionRoundedIcon from "@mui/icons-material/DescriptionRounded";
 import type { MRT_ColumnDef } from "material-react-table";
-import userService, {
-  ExcelPreviewResponse,
-  ExcelUploadResponse,
-  StatusFilter,
-  ExcelRowResult,
-} from "@/pages/user/api";
+import userService, {ExcelPreviewResponse,ExcelUploadResponse,StatusFilter,ExcelRowResult,} from "@/pages/user/api";
 
 interface UserExcelUploadProps {
   open: boolean;
@@ -266,12 +249,30 @@ const UserExcelUpload = ({ open, onClose, onSuccess, onError }: UserExcelUploadP
         minSize: 150,
         Cell: ({ cell }) => cell.getValue<string>() || "N/A",
       },
-      {
+            {
         accessorKey: "branchIds",
         header: "Branch",
-        size: 180,
-        minSize: 130,
-        Cell: ({ cell }) => cell.getValue<string>() || "N/A",
+        size: 220,
+        minSize: 180,
+        maxSize: 220,
+        Cell: ({ cell }) => {
+          const value = cell.getValue<string>();
+          if (!value) return "N/A";
+          return (
+            <Typography
+              title={value}
+              sx={{
+                fontSize: "0.75rem",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: 200,
+              }}
+            >
+              {value}
+            </Typography>
+          );
+        },
       },
       {
         accessorKey: "roleName",
@@ -393,10 +394,7 @@ const UserExcelUpload = ({ open, onClose, onSuccess, onError }: UserExcelUploadP
     ]
     : [];
 
-  // ---------- STEP 1: Small dialog — only shows while there is NO preview yet ----------
   const showUploadDialog = open && !preview;
-
-  // ---------- STEP 2: Large dialog — shows once preview data is available ----------
   const showPreviewDialog = open && !!preview;
 
   return (
@@ -539,7 +537,14 @@ const UserExcelUpload = ({ open, onClose, onSuccess, onError }: UserExcelUploadP
 
         <DialogContent
           dividers
-          sx={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, p: 2 }}
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            minWidth: 0,
+            p: 2,
+          }}
         >
           {file && (
             <Box
@@ -652,13 +657,53 @@ const UserExcelUpload = ({ open, onClose, onSuccess, onError }: UserExcelUploadP
             sx={{
               flex: 1,
               minHeight: 0,
+              minWidth: 0,
               width: "100%",
-              overflow: "auto",
+              display: "flex",
+              flexDirection: "column",
               borderRadius: 2,
+              overflow: "hidden",
+
+              "& > *": {
+                flex: 1,
+                minHeight: 0,
+                minWidth: 0,
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              },
+
+              "& .MuiTableContainer-root": {
+                flex: 1,
+                minHeight: 0,
+                overflowX: "auto",
+                overflowY: "auto",
+                maxHeight: "none",
+              },
+
+              "& table": {
+                width: "max-content",
+                minWidth: "100%",
+                tableLayout: "auto",
+              },
+
+              "& thead th": {
+                position: "sticky",
+                top: 0,
+                zIndex: 3,
+                backgroundColor: "#1E1B4B",
+                color: "#FFFFFF",
+                whiteSpace: "nowrap",
+              },
+
+              "& tbody td": {
+                whiteSpace: "nowrap",
+              },
             }}
           >
             {preview && (
               <ReactMaterialTable
+                fillHeight
                 data={paginatedRows}
                 columns={columns}
                 page={page}

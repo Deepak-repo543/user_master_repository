@@ -1,14 +1,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Box, Chip, Tooltip } from "@mui/material";
-import {
-  MaterialReactTable,
-  type MRT_ColumnDef,
-  type MRT_PaginationState,
-  type MRT_SortingState,
-  type MRT_RowSelectionState,
-  type MRT_Row,
-} from "material-react-table";
+import { MaterialReactTable, type MRT_ColumnDef, type MRT_PaginationState, type MRT_SortingState, type MRT_RowSelectionState, type MRT_Row, } from "material-react-table";
 import { alpha } from "@mui/material/styles";
 import ClearRoundedIcon from "@mui/icons-material/ClearRounded";
 
@@ -18,46 +11,30 @@ interface ReactMaterialTableProps<T extends Record<string, any>> {
   page: number;
   rowsPerPage: number;
   totalElements: number;
-
+  fillHeight?: boolean;
   onPageChange: (page: number, rowsPerPage: number) => void;
   onRowsPerPageChange: (value: number) => void;
-
-  onSortChange?: (
-    sortBy: string,
-    direction: "asc" | "desc"
-  ) => void;
-
+  onSortChange?: ( sortBy: string, direction: "asc" | "desc") => void;
   onRowClick?: (row: T) => void;
-
   getRowId?: (row: T) => string;
-
   enableRowSelection?: boolean;
-
   onSelectionChange?: (selectedRows: T[]) => void;
-
   renderDetailPanel?: (row: T) => React.ReactNode;
-
   enableColumnResizing?: boolean;
   enableGlobalFilter?: boolean;
-
-  renderToolbarActions?: (
-    selectedRows: T[]
-  ) => React.ReactNode;
-
+  renderToolbarActions?: (selectedRows: T[]) => React.ReactNode;
   rowsPerPageOptions?: number[];
-
   entityLabel?: string;
 }
 
-const ReactMaterialTable = <
-  T extends Record<string, any>
->({
+const ReactMaterialTable = < T extends Record<string, any>>({
   data,
   columns,
   page,
   rowsPerPage,
   totalElements,
   onPageChange,
+  fillHeight,
   onRowsPerPageChange,
   onSortChange,
   onRowClick,
@@ -219,7 +196,20 @@ const ReactMaterialTable = <
         maxWidth: "100%",
         overflow: "hidden",
         position: "relative",
-
+        ...(fillHeight
+          ? {
+            height: "100%",
+            minHeight: 0,
+            display: "flex",
+            flexDirection: "column",
+            "& > .MuiPaper-root": {
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
+            },
+          }
+          : {}),
         "& .MuiTableContainer-root": {
           scrollbarWidth: "thin",
         },
@@ -307,13 +297,14 @@ const ReactMaterialTable = <
         muiTablePaperProps={{
           sx: {
             maxWidth: "100%",
-            boxShadow:
-              "0 1px 3px rgba(15, 23, 42, 0.04)",
+            boxShadow: "0 1px 3px rgba(15, 23, 42, 0.04)",
             borderRadius: 2.5,
             bgcolor: "#FFFFFF",
             overflow: "hidden",
-            border:
-              "1px solid #E2E8F0",
+            border: "1px solid #E2E8F0",
+            ...(fillHeight
+              ? { height: "100%", display: "flex", flexDirection: "column" }
+              : {}),
           },
         }}
 
@@ -439,7 +430,9 @@ const ReactMaterialTable = <
 
         muiTableContainerProps={{
           sx: {
-            maxHeight: 450,
+            ...(fillHeight
+              ? { flex: 1, minHeight: 0, maxHeight: "none" }
+              : { maxHeight: 450 }),
             overflowX: "auto",
             overflowY: "auto",
             borderRadius: 2,
@@ -469,8 +462,9 @@ const ReactMaterialTable = <
 
         muiTableProps={{
           sx: {
-            tableLayout: "fixed",
-            width: "100%",
+            tableLayout: fillHeight ? "auto" : "fixed",
+            width: fillHeight ? "max-content" : "100%",
+            minWidth: "100%",
             borderCollapse: "separate",
             borderSpacing: 0,
 
