@@ -133,23 +133,22 @@ const AddUserForm: React.FC<AddUserFormProps> = ({
         users: [createEmptyUser()],
       });
       setSuccessDialogOpen(true);
-    } catch (error: any) {
-      console.error("Error creating users:", error);
-      console.error("Status:", error?.response?.status);
-      console.error("Backend response:", error?.response?.data);
-
-      const message =
-        error?.response?.data?.error ||
+   } catch (error: any) {
+  console.error("Error creating users:", error);
+  const status = error?.response?.status;
+  const message =
+    status === 401 || status === 403
+      ? "You are not authorized to add users."
+      : error?.response?.data?.error ||
         error?.response?.data?.message ||
         error?.message ||
         "Failed to create users.";
-
-      setSnackbar({
-        open: true,
-        message: String(message),
-        severity: "error",
-      });
-    }
+  setSnackbar({
+    open: true,
+    message: String(message),
+    severity: "error",
+  });
+}
   };
 
   const onError = (formErrors: FieldErrors<UserFormData>) => {

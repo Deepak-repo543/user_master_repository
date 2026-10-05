@@ -93,7 +93,6 @@ const UserActivityBoard = () => {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openExcelUpload, setOpenExcelUpload] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [excelSuccessMessage, setExcelSuccessMessage] = useState("");
   const [emailDialogMessage, setEmailDialogMessage] = useState("");
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
@@ -146,6 +145,7 @@ const UserActivityBoard = () => {
     }
   };
 
+
   const handleHardRefresh = () => {
     statsViewModeRef.current = "asPerDate";
     setStatsViewMode("asPerDate");
@@ -186,18 +186,21 @@ const UserActivityBoard = () => {
       if (contentType.includes("application/json")) {
         const text = new TextDecoder().decode(response.data);
         const data = JSON.parse(text);
+        if (data?.status === 401 || data?.status === 403) {
+          showNotAuthorized("You are not authorized to download Excel.");
+          return;
+        }
         if (data?.data?.title && data?.data?.message) {
           setEmailDialogTitle(data.data.title);
           setEmailDialogMessage(data.data.message);
           setEmailDialogOpen(true);
           return;
         }
-        setErrorDialogMessage(
-          data?.message || "Download failed.",
-        );
+        setErrorDialogMessage(data?.message || "Download failed.");
         setErrorDialogOpen(true);
         return;
       }
+
       const blob = new Blob([response.data], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
@@ -212,14 +215,23 @@ const UserActivityBoard = () => {
         `${String(now.getHours()).padStart(2, "0")}` +
         `${String(now.getMinutes()).padStart(2, "0")}` +
         `${String(now.getSeconds()).padStart(2, "0")}`;
-      const fileName = `user_master_export_${timestamp}.xlsx`;
-      link.setAttribute("download", fileName);
+      link.setAttribute("download", `user_master_export_${timestamp}.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: "Excel downloaded successfully.",
+        severity: "success",
+      });
+    } catch (error: any) {
       console.error("Excel download failed:", error);
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        showNotAuthorized("You are not authorized to download Excel.");
+        return;
+      }
       setErrorDialogMessage("Download failed.");
       setErrorDialogOpen(true);
     }
@@ -236,8 +248,14 @@ const UserActivityBoard = () => {
       setEmailSuccessMessage(response?.data?.message || "Excel has been sent to your email.");
       setEmailSuccessDialogOpen(true);
       window.dispatchEvent(new Event("notification-updated"));
-    } catch (error) {
+    } catch (error: any) {
       console.error("Email export failed:", error);
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        setEmailDialogOpen(false);
+        showNotAuthorized("You are not authorized to export Excel.");
+        return;
+      }
       alert("Failed to send Excel by email.");
     } finally {
       setEmailLoading(false);
@@ -246,10 +264,6 @@ const UserActivityBoard = () => {
 
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
   const roleName = String(userData.role || userData.roleName || "").toUpperCase().replace("ROLE_", "");
-  const canEditOrAdd = ["ADMIN", "MANAGEMENT", "HOD"].includes(roleName);
-  const canDelete = roleName === "ADMIN";
-  const canUpload = ["ADMIN", "HOD"].includes(roleName);
-  const canExport = ["ADMIN", "MANAGEMENT", "HOD"].includes(roleName);
   const maxDate = dayjs().format("YYYY-MM-DD");
   const minDate = "";
 
@@ -257,30 +271,36 @@ const UserActivityBoard = () => {
     setSnackbar({ open: true, message, severity: "error" });
   }, []);
 
-  const handleOpenUserForm = useCallback(
-    (userId?: number) => {
-      if (!canEditOrAdd) {
-        showNotAuthorized("You are not authorized to perform this action.");
+  const handleUploadError = useCallback(
+    (error: any) => {
+      setOpenExcelUpload(false);
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        showNotAuthorized("You are not authorized to upload users.");
         return;
       }
+      setSnackbar({
+        open: true,
+        message: error?.response?.data?.message || "Upload failed.",
+        severity: "error",
+      });
+    },
+    [showNotAuthorized],
+  );
+
+  const handleOpenUserForm = useCallback(
+    (userId?: number) => {
       if (userId === undefined) clearSingleUser();
       setSelectedUserId(userId);
       setOpenUserForm(true);
     },
-    [clearSingleUser, canEditOrAdd, showNotAuthorized],
+    [clearSingleUser],
   );
 
-  const handleDeleteClick = useCallback(
-    (user: User) => {
-      if (!canDelete) {
-        showNotAuthorized("You are not authorized to delete users.");
-        return;
-      }
-      setUserToDelete(user.id);
-      setDeleteDialogOpen(true);
-    },
-    [canDelete, showNotAuthorized],
-  );
+  const handleDeleteClick = useCallback((user: User) => {
+    setUserToDelete(user.id);
+    setDeleteDialogOpen(true);
+  }, []);
 
   const handleCloseUserForm = useCallback(() => {
     setOpenUserForm(false);
@@ -1422,6 +1442,40 @@ const UserActivityBoard = () => {
     dispatch(setUserFilters({ [key]: "" }));
   };
 
+  const handleTemplateDownload = async () => {
+    try {
+      const blob = await userService.downloadTemplate();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.setAttribute("download", "user_master_template.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+
+      setSnackbar({
+        open: true,
+        message: "Template downloaded successfully.",
+        severity: "success",
+      });
+    } catch (error: any) {
+      console.error("Template download failed:", error);
+      const status = error?.response?.status;
+
+      if (status === 401 || status === 403) {
+        showNotAuthorized("You are not authorized to download the template.");
+        return;
+      }
+
+      setSnackbar({
+        open: true,
+        message: "Template download failed.",
+        severity: "error",
+      });
+    }
+  };
+
   const handleStatusCardClick = (status: string) => {
     const sameStatus = appliedFilters.status === status;
     setSelectedStatCard(status);
@@ -1443,22 +1497,16 @@ const UserActivityBoard = () => {
       const deletedUser = userList.find(
         (user) => user.id === userToDelete
       );
-
       await userService.deleteUser(userToDelete);
-
       if (deletedUser?.employeeCode) {
         userService.invalidateUserHistory(
           deletedUser.employeeCode
         );
       }
-
       setDeleteDialogOpen(false);
       setUserToDelete(null);
       setPage(0);
-
-      // Hard refresh table + status cards
       setTableRefreshKey((prev) => prev + 1);
-
       setSnackbar({
         open: true,
         message: "User deleted successfully.",
@@ -1467,12 +1515,14 @@ const UserActivityBoard = () => {
     } catch (error: any) {
       setDeleteDialogOpen(false);
       setUserToDelete(null);
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        showNotAuthorized("You are not authorized to delete users.");
+        return;
+      }
       setSnackbar({
         open: true,
-        message:
-          error?.response?.status === 403
-            ? "You are not authorized to delete users."
-            : error?.response?.data?.message || "Failed to delete user.",
+        message: error?.response?.data?.message || "Failed to delete user.",
         severity: "error",
       });
     }
@@ -1879,7 +1929,6 @@ const UserActivityBoard = () => {
           setOpenExcelUpload(false);
           setPage(0);
           setTableRefreshKey((prev) => prev + 1);
-
           const successfulEmployeeCodes = result?.successfulEmployeeCodes ?? [];
           successfulEmployeeCodes.forEach((employeeCode) => {
             if (employeeCode) {
@@ -1888,19 +1937,19 @@ const UserActivityBoard = () => {
           });
           const successCount = result?.successCount ?? 0;
           const failureCount = result?.failureCount ?? 0;
-
-          if (failureCount > 0) {
-            setExcelSuccessMessage(
-              `${successCount} user${successCount !== 1 ? "s" : ""} uploaded successfully and ${failureCount} row${failureCount !== 1 ? "s" : ""} failed.`,
-            );
-          } else {
-            setExcelSuccessMessage(
-              `${successCount} user${successCount !== 1 ? "s" : ""} uploaded successfully.`,
-            );
-          }
+          const message =
+            failureCount > 0
+              ? `${successCount} user${successCount !== 1 ? "s" : ""} uploaded successfully and ${failureCount} row${failureCount !== 1 ? "s" : ""} failed.`
+              : `${successCount} user${successCount !== 1 ? "s" : ""} uploaded successfully.`;
+          setSnackbar({
+            open: true,
+            message,
+            severity: failureCount > 0 ? "warning" : "success",
+          });
 
           window.dispatchEvent(new Event("notification-updated"));
         }}
+        onError={handleUploadError}
       />
 
       <Snackbar
@@ -1945,27 +1994,7 @@ const UserActivityBoard = () => {
       <Tooltip title="Download Template">
         <span>
           <Fab
-            onClick={async () => {
-              if (!canExport) {
-                showNotAuthorized("You are not authorized to download the template.");
-                return;
-              }
-              const blob = await userService.downloadTemplate();
-              const blobUrl = window.URL.createObjectURL(blob);
-              const link = document.createElement("a");
-
-              link.href = blobUrl;
-              link.setAttribute(
-                "download",
-                "user_master_template.xlsx",
-              );
-
-              document.body.appendChild(link);
-              link.click();
-              link.remove();
-
-              window.URL.revokeObjectURL(blobUrl);
-            }}
+            onClick={handleTemplateDownload}
             sx={{
               position: "fixed",
               right: { xs: 18, md: 28 },
@@ -1974,10 +2003,8 @@ const UserActivityBoard = () => {
               width: 40,
               height: 40,
               color: "#FFF",
-              background:
-                "linear-gradient(135deg,#3B82F6,#2563EB)",
-              boxShadow:
-                "0 8px 20px rgba(37,99,235,.28)",
+              background: "linear-gradient(135deg,#3B82F6,#2563EB)",
+              boxShadow: "0 8px 20px rgba(37,99,235,.28)",
             }}
           >
             <UserTemplateButton />
@@ -1989,10 +2016,6 @@ const UserActivityBoard = () => {
         <span>
           <Fab
             onClick={() => {
-              if (!canExport) {
-                showNotAuthorized("You are not authorized to download Excel.");
-                return;
-              }
               handleExcelDownload();
             }}
             sx={{
@@ -2171,10 +2194,6 @@ const UserActivityBoard = () => {
         <span>
           <Fab
             onClick={() => {
-              if (!canUpload) {
-                showNotAuthorized("You are not authorized to upload users.");
-                return;
-              }
               setOpenExcelUpload(true);
             }}
             sx={{

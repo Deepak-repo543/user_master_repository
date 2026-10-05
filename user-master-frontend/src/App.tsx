@@ -1,48 +1,30 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  Box,
-  CssBaseline,
-  useMediaQuery,
-  useTheme,
-  GlobalStyles,
-} from "@mui/material";
+import { Box, CssBaseline, useMediaQuery, useTheme, GlobalStyles } from "@mui/material";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-
 import Sidebar, { type SidebarMenuItem } from "./apps/layout/sidebar";
-import Navbar from "./apps/layout/navbar";
-import Footer from "./apps/layout/footer";
-
+import Navbar from "@/layout/navbar";
+import Footer from "@/layout/footer";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
-
-import Dashboard from "./apps/pages/user/user-dashboard";
-import UserActivityBoard from "./apps/pages/user/user-activity-board";
-import userService from "./apps/pages/user/api";
+import Dashboard from "@/pages/user/user-dashboard";
+import UserActivityBoard from "@/pages/user/user-activity-board";
+import userService from "@/pages/user/api";
 
 const SIDEBAR_WIDTH = 238;
 const SIDEBAR_COLLAPSED_WIDTH = 68;
-
-// Page load ke time ek baar check hota hai:
-// page reload hua tha AND user pehle se logged in tha.
-const navEntry = performance.getEntriesByType("navigation")[0] as
-  | PerformanceNavigationTiming
-  | undefined;
-
-const shouldRedirectOnReload =
-  navEntry?.type === "reload" && !!localStorage.getItem("user");
-
+const navEntry = performance.getEntriesByType("navigation")[0] as | PerformanceNavigationTiming | undefined;
+const shouldRedirectOnReload = navEntry?.type === "reload" && !!localStorage.getItem("user");
 let reloadRedirectDone = false;
-
 const menuItems: SidebarMenuItem[] = [
-  {
-    id: "activity-board",
-    label: "Activity Board",
-    icon: <ManageAccountsIcon />,
-  },
   {
     id: "dashboard",
     label: "Dashboard",
     icon: <DashboardIcon />,
+  },
+  {
+    id: "activity-board",
+    label: "Activity Board",
+    icon: <ManageAccountsIcon />,
   },
 ];
 
@@ -50,16 +32,11 @@ const App = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
-
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-
   const userData = JSON.parse(localStorage.getItem("user") || "{}");
 
-  // Logged-in user kisi bhi tab par reload kare to Activity Board par bhejo.
-  // Login ke baad normal flow me dashboard hi khulega.
   useEffect(() => {
     if (shouldRedirectOnReload && !reloadRedirectDone) {
       reloadRedirectDone = true;
@@ -67,11 +44,7 @@ const App = () => {
     }
   }, [navigate]);
 
-  const currentPage =
-    location.pathname === "/activity-board"
-      ? "activity-board"
-      : "dashboard";
-
+  const currentPage = location.pathname === "/activity-board" ? "activity-board" : "dashboard";
   const userName =
     userData.fullName ||
     userData.userName ||
@@ -80,16 +53,6 @@ const App = () => {
     "Admin";
 
   const userInitial = userName.charAt(0).toUpperCase();
-
-  const userRole =
-    userData.role ||
-    userData.roleName ||
-    userData.roles?.[0] ||
-    "Administrator";
-
-  const currentSidebarWidth = sidebarCollapsed
-    ? SIDEBAR_COLLAPSED_WIDTH
-    : SIDEBAR_WIDTH;
 
   const handleSidebarCollapse = useCallback((collapsed: boolean) => {
     setSidebarCollapsed(collapsed);

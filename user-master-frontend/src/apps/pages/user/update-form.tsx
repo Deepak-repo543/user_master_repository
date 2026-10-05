@@ -244,36 +244,34 @@ const UpdateUserForm: React.FC<UpdateUserFormProps> = ({
           user.profileImage
         );
       }
-
       if (user.digitalSignature instanceof File) {
         attachmentFormData.append(
           `digitalSignature_${user.userId}`,
           user.digitalSignature
         );
       }
-
       if ([...attachmentFormData.keys()].length > 0) {
         await userService.uploadAttachments(attachmentFormData);
       }
-
       setSuccessDialogOpen(true);
     } catch (error: any) {
       console.error("Update user failed:", error);
-
+      const status = error?.response?.status;
       const message =
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to update user.";
-
+        status === 401 || status === 403
+          ? "You are not authorized to update users."
+          : error?.response?.data?.error ||
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to update user.";
       setSnackbar({
         open: true,
         message: String(message),
         severity: "error",
       });
-    } finally {
-      setSubmitting(false);
-    }
+    }finally {
+    setSubmitting(false);
+  }
   };
 
   const handleCancel = () => {

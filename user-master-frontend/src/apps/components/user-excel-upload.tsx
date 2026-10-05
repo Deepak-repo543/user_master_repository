@@ -33,6 +33,7 @@ interface UserExcelUploadProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: (result: ExcelUploadResponse) => void;
+  onError?: (error: any) => void;
 }
 
 const STATUS_META: Record<StatusFilter, { bg: string; text: string; border: string; icon: React.ReactElement }> = {
@@ -68,7 +69,7 @@ const STATUS_META: Record<StatusFilter, { bg: string; text: string; border: stri
   },
 };
 
-const UserExcelUpload = ({ open, onClose, onSuccess }: UserExcelUploadProps) => {
+const UserExcelUpload = ({ open, onClose, onSuccess, onError }: UserExcelUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -115,9 +116,14 @@ const UserExcelUpload = ({ open, onClose, onSuccess }: UserExcelUploadProps) => 
       const res = await userService.previewExcel(selected);
       setPreview(res.data);
     } catch (err: any) {
-      alert(err?.response?.data?.message || "Failed to read file");
       setFile(null);
       setPreview(null);
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) {
+        onError?.(err);
+        return;
+      }
+      alert(err?.response?.data?.message || "Failed to read file");
     } finally {
       setPreviewLoading(false);
     }
@@ -158,14 +164,11 @@ const UserExcelUpload = ({ open, onClose, onSuccess }: UserExcelUploadProps) => 
 
   const handleConfirmSave = async () => {
     if (!file || !preview) return;
-
     if (preview.validCount === 0) {
       alert("No valid rows available to save.");
       return;
     }
-
     setSaving(true);
-
     try {
       const res = await userService.uploadExcel(file);
       window.dispatchEvent(new Event("notification-updated"));
@@ -173,6 +176,12 @@ const UserExcelUpload = ({ open, onClose, onSuccess }: UserExcelUploadProps) => 
       resetState();
       onClose();
     } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 401 || status === 403) {
+        resetState();
+        onError?.(err);
+        return;
+      }
       alert(err?.response?.data?.message || "Upload failed");
     } finally {
       setSaving(false);
