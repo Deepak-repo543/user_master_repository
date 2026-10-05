@@ -33,4 +33,5 @@ public class ExcelRowResultDto {
     private String validationStatus;
     private String result;
     private String message;
+    private boolean status;
 }

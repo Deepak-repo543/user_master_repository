@@ -31,8 +31,8 @@ import java.util.stream.Collectors;
 @Component
 public class ExcelHelper {
 
-    private static final String[] HEADERS = {"User ID", "Employee ID", "Employee Code", "Full Name", "Email", "Mobile Number", "Department", "Designation", "Branch", "Role", "Reporting Manager", "Language", "Time Zone", "Login Type", "Password Expiry", "Two Factor Auth", "Remarks", "Dashboard", "Accessible Modules"};
-    private static final String[] COLUMN_TYPES = {"MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "OPTIONAL", "MANDATORY", "OPTIONAL", "MANDATORY", "OPTIONAL", "OPTIONAL", "OPTIONAL", "OPTIONAL", "OPTIONAL"};
+    private static final String[] HEADERS = {"User ID", "Employee ID", "Employee Code", "Full Name", "Email", "Mobile Number", "Department", "Designation", "Branch", "Role", "Reporting Manager", "Language", "Time Zone", "Login Type", "Password Expiry", "Two Factor Auth", "Remarks", "Dashboard", "Accessible Modules", "Status"};
+    private static final String[] COLUMN_TYPES = {"MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "OPTIONAL", "MANDATORY", "OPTIONAL", "MANDATORY", "OPTIONAL", "OPTIONAL", "OPTIONAL", "OPTIONAL", "OPTIONAL", "OPTIONAL"};
 
     public Workbook getWorkbook(MultipartFile file) throws IOException {
         return new XSSFWorkbook(file.getInputStream());
@@ -60,21 +60,41 @@ public class ExcelHelper {
         dto.setRemarks(getString(row, 16, formatter));
         dto.setDashboard(getString(row, 17, formatter));
         dto.setAccessibleModules(parseNamesToIds(getString(row, 18, formatter), moduleMap));
+        dto.setStatus(parseStatus(getString(row, 19, formatter)));
         return dto;
+    }
+
+    private boolean parseStatus(String value) {
+        if (value == null || value.trim().isEmpty()) return false;
+        String normalized = value.trim().toLowerCase();
+        return switch (normalized) {
+            case "inactive", "true", "1" -> true;
+            default -> false;
+        };
     }
 
     public byte[] createResultExcel(List<ExcelRowResultDto> rows) throws IOException {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Upload Result");
-        String[] headers = {"Row Number", "User ID", "Employee ID", "Employee Code", "Full Name", "Email", "Mobile Number", "Department", "Designation", "Branch", "Role", "Reporting Manager", "Language", "Time Zone", "Login Type", "Password Expiry", "Two Factor Auth", "Remarks", "Dashboard", "Accessible Modules", "Validation Status", "Result", "Reason"};
+        String[] headers = {"Row Number", "User ID", "Employee ID", "Employee Code", "Full Name", "Email", "Mobile Number", "Department", "Designation", "Branch", "Role", "Reporting Manager", "Language", "Time Zone", "Login Type", "Password Expiry", "Two Factor Auth", "Remarks", "Dashboard", "Accessible Modules", "Status", "Validation Status", "Reason"};
+        CellStyle mandatoryStyle = createHeaderStyle(workbook, IndexedColors.RED);
+        CellStyle optionalStyle = createHeaderStyle(workbook, IndexedColors.YELLOW);
         CellStyle headerStyle = createNormalHeaderStyle(workbook);
-        Row headerRow = sheet.createRow(0);
+        String[] resultColumnTypes = {"OPTIONAL", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "MANDATORY", "OPTIONAL", "MANDATORY", "OPTIONAL", "MANDATORY", "OPTIONAL", "OPTIONAL", "OPTIONAL", "OPTIONAL", "OPTIONAL", "OPTIONAL", "OPTIONAL", "OPTIONAL"};
+        Row typeRow = sheet.createRow(0);
+        Row headerRow = sheet.createRow(1);
         for (int i = 0; i < headers.length; i++) {
-            Cell cell = headerRow.createCell(i);
-            cell.setCellValue(headers[i]);
-            cell.setCellStyle(headerStyle);
+            Cell typeCell = typeRow.createCell(i);
+            typeCell.setCellValue(resultColumnTypes[i]);
+            if ("MANDATORY".equals(resultColumnTypes[i]))
+                typeCell.setCellStyle(mandatoryStyle);
+            else
+                typeCell.setCellStyle(optionalStyle);
+            Cell headerCell = headerRow.createCell(i);
+            headerCell.setCellValue(headers[i]);
+            headerCell.setCellStyle(headerStyle);
         }
-        int rowIndex = 1;
+        int rowIndex = 2;
         if (rows != null) {
             for (ExcelRowResultDto item : rows) {
                 Row row = sheet.createRow(rowIndex++);
@@ -98,16 +118,15 @@ public class ExcelHelper {
                 row.createCell(17).setCellValue(value(item.getRemarks()));
                 row.createCell(18).setCellValue(value(item.getDashboard()));
                 row.createCell(19).setCellValue(value(item.getAccessibleModules()));
-                row.createCell(20).setCellValue(value(item.getValidationStatus()));
-                row.createCell(21).setCellValue(value(item.getResult()));
+                row.createCell(20).setCellValue(item.isStatus() ? "Inactive" : "Active");
+                row.createCell(21).setCellValue(value(item.getValidationStatus()));
                 row.createCell(22).setCellValue(value(item.getMessage()));
             }
         }
+
         for (int i = 0; i < headers.length; i++) {
             sheet.autoSizeColumn(i);
-            if (sheet.getColumnWidth(i) > 15000) {
-                sheet.setColumnWidth(i, 15000);
-            }
+            if (sheet.getColumnWidth(i) > 15000) sheet.setColumnWidth(i, 15000);
         }
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         workbook.write(outputStream);
@@ -120,17 +139,13 @@ public class ExcelHelper {
     }
 
     public boolean isRowEmpty(Row row) {
-        if (row == null) {
-            return true;
-        }
+        if (row == null) return true;
         DataFormatter formatter = new DataFormatter();
         for (int i = 0; i < HEADERS.length; i++) {
             Cell cell = row.getCell(i);
             if (cell != null) {
                 String value = formatter.formatCellValue(cell);
-                if (value != null && !value.trim().isEmpty()) {
-                    return false;
-                }
+                if (value != null && !value.trim().isEmpty()) return false;
             }
         }
         return true;
@@ -245,20 +260,18 @@ public class ExcelHelper {
         for (int i = 0; i < HEADERS.length; i++) {
             Cell typeCell = typeRow.createCell(i);
             typeCell.setCellValue(COLUMN_TYPES[i]);
-            if ("MANDATORY".equals(COLUMN_TYPES[i])) {
+            if ("MANDATORY".equals(COLUMN_TYPES[i]))
                 typeCell.setCellStyle(mandatoryStyle);
-            } else {
+            else
                 typeCell.setCellStyle(optionalStyle);
-            }
             Cell headerCell = headerRow.createCell(i);
             headerCell.setCellValue(HEADERS[i]);
             headerCell.setCellStyle(headerStyle);
         }
 
-        String[] exampleValues = {"U1001", "1001", "EMP1001", "John Doe", "john.doe@example.com", "9876543210", "Information Technology", "Senior Software Engineer", "Main Office", "Employee", "1005", "English", "Asia/Kolkata", "Password", "3", "Yes", "Sample remarks", "Default", "User Management"};
-        for (int i = 0; i < exampleValues.length; i++) {
+        String[] exampleValues = {"U1001", "1001", "EMP1001", "John Doe", "john.doe@example.com", "9876543210", "Information Technology", "Senior Software Engineer", "Main Office", "Employee", "1005", "English", "Asia/Kolkata", "Password", "3", "Yes", "Sample remarks", "Default", "User Management", "Active"};
+        for (int i = 0; i < exampleValues.length; i++)
             exampleRow.createCell(i).setCellValue(exampleValues[i]);
-        }
         sheet.createFreezePane(0, 2);
         sheet.setAutoFilter(new CellRangeAddress(1, 1, 0, HEADERS.length - 1));
         autoSizeColumns(sheet);
@@ -279,11 +292,10 @@ public class ExcelHelper {
         for (int i = 0; i < HEADERS.length; i++) {
             Cell typeCell = typeRow.createCell(i);
             typeCell.setCellValue(COLUMN_TYPES[i]);
-            if ("MANDATORY".equals(COLUMN_TYPES[i])) {
+            if ("MANDATORY".equals(COLUMN_TYPES[i]))
                 typeCell.setCellStyle(mandatoryStyle);
-            } else {
+            else
                 typeCell.setCellStyle(optionalStyle);
-            }
             Cell headerCell = headerRow.createCell(i);
             headerCell.setCellValue(HEADERS[i]);
             headerCell.setCellStyle(headerStyle);
@@ -312,6 +324,7 @@ public class ExcelHelper {
                 setCell(row, 16, user.getRemarks());
                 setCell(row, 17, user.getDashboard());
                 setCell(row, 18, getModuleNames(user.getAccessibleModules(), moduleMap));
+                setCell(row, 19, user.getStatus() ? "Inactive" : "Active");
             }
         }
         sheet.createFreezePane(0, 2);
@@ -325,39 +338,6 @@ public class ExcelHelper {
 
     public ExcelFailedRowDto createFailedRow(Row row, int rowNumber, String failureReason) {
         return new ExcelFailedRowDto(rowNumber, getRowValues(row), failureReason);
-    }
-
-    public byte[] createFailedExcel(List<ExcelFailedRowDto> failedRows) throws IOException {
-        Workbook workbook = new XSSFWorkbook();
-        Sheet sheet = workbook.createSheet("Failed Users");
-        CellStyle headerStyle = createNormalHeaderStyle(workbook);
-        String[] failedHeaders = {"Row Number", "User ID", "Employee ID", "Employee Code", "Full Name", "Email", "Mobile Number", "Department", "Designation", "Branch", "Role", "Reporting Manager", "Language", "Time Zone", "Login Type", "Password Expiry", "Two Factor Auth", "Remarks", "Dashboard", "Accessible Modules", "Failure Reason"};
-        Row headerRow = sheet.createRow(0);
-        for (int i = 0; i < failedHeaders.length; i++) {
-            Cell cell = headerRow.createCell(i);
-            cell.setCellValue(failedHeaders[i]);
-            cell.setCellStyle(headerStyle);
-        }
-        if (failedRows != null) {
-            int rowIndex = 1;
-            for (ExcelFailedRowDto failedRow : failedRows) {
-                Row row = sheet.createRow(rowIndex++);
-                row.createCell(0).setCellValue(failedRow.getRowNumber());
-                List<String> values = failedRow.getValues();
-                for (int i = 0; i < values.size(); i++) {
-                    row.createCell(i + 1).setCellValue(values.get(i) == null ? "" : values.get(i));
-                }
-                row.createCell(values.size() + 1).setCellValue(failedRow.getFailureReason() == null ? "" : failedRow.getFailureReason());
-            }
-        }
-        for (int i = 0; i < failedHeaders.length; i++) {
-            sheet.autoSizeColumn(i);
-            if (sheet.getColumnWidth(i) > 15000) sheet.setColumnWidth(i, 15000);
-        }
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        workbook.write(outputStream);
-        workbook.close();
-        return outputStream.toByteArray();
     }
 
     public List<String> getRowValues(Row row) {

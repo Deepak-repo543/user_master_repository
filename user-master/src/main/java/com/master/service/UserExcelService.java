@@ -77,10 +77,10 @@ public class UserExcelService {
     private final ExportFileRepository exportFileRepository;
     @Value("${excel.notification-email}")
     private String notificationEmail;
-    
+
     public ResponseEntity<ApiResponse<ExcelUploadResponseDto>> uploadExcel(MultipartFile file) {
         try {
-            if (file == null || file.isEmpty()) 
+            if (file == null || file.isEmpty())
                 return ResponseEntity.badRequest().body(new ApiResponse<>(400, "Excel file is required", null, "Excel file is required"));
             Map<String, Long> departmentMap = getDepartmentMap();
             Map<String, Long> designationMap = getDesignationMap();
@@ -102,7 +102,7 @@ public class UserExcelService {
             int totalRows = 0;
             for (int rowIndex = 2; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
-                if (excelHelper.isRowEmpty(row)) 
+                if (excelHelper.isRowEmpty(row))
                     continue;
                 totalRows++;
                 ExcelRowResultDto result = new ExcelRowResultDto();
@@ -187,7 +187,7 @@ public class UserExcelService {
             String emailBody;
             if (failureCount == 0)
                 emailBody = "Excel upload completed successfully. " + successCount + " users uploaded successfully. " + "Please find the result Excel attached.";
-             else
+            else
                 emailBody = "Excel upload completed. " + successCount + " users uploaded successfully and " + failureCount + " rows failed. " + "Please find the result Excel attached.";
             emailService.sendEmailWithAttachment(notificationEmail, "Excel Upload Completed", emailBody, "user-upload-result.xlsx", resultExcel);
             ExcelUploadResponseDto response = new ExcelUploadResponseDto(totalRows, successCount, failureCount, errors, successfulEmployeeCodes);
@@ -196,9 +196,9 @@ public class UserExcelService {
                 return ResponseEntity.badRequest().body(new ApiResponse<>(400, "No valid users found", response, null));
             }
             String notificationMessage;
-            if (failureCount == 0) 
+            if (failureCount == 0)
                 notificationMessage = "Excel upload completed successfully. " + successCount + " users uploaded.";
-             else 
+            else
                 notificationMessage = "Excel upload completed. " + successCount + " users uploaded successfully and " + failureCount + " rows failed.";
             notificationService.createNotification("Excel Upload Completed", notificationMessage, "EXCEL_UPLOAD", null);
             return ResponseEntity.status(201).body(new ApiResponse<>(201, "Users uploaded successfully", response, null));
@@ -232,7 +232,7 @@ public class UserExcelService {
             int duplicateCount = 0;
             for (int rowIndex = 2; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
-                if (excelHelper.isRowEmpty(row)) 
+                if (excelHelper.isRowEmpty(row))
                     continue;
                 totalRows++;
                 ExcelRowResultDto result = new ExcelRowResultDto();
@@ -280,9 +280,9 @@ public class UserExcelService {
                     String duplicateError = checkExistingDuplicate(dto);
                     String inFileDuplicateError = findInFileDuplicate(dto, userIds, employeeIds, employeeCodes, emails, mobiles);
                     List<String> allDuplicateErrors = new ArrayList<>();
-                    if (duplicateError != null) 
+                    if (duplicateError != null)
                         allDuplicateErrors.add(duplicateError);
-                    if (inFileDuplicateError != null) 
+                    if (inFileDuplicateError != null)
                         allDuplicateErrors.add(inFileDuplicateError);
                     if (!allDuplicateErrors.isEmpty()) {
                         result.setValidationStatus("DUPLICATE");
@@ -399,7 +399,7 @@ public class UserExcelService {
         Map<Long, String> roleMap = getRoleNameMap();
         Map<Long, String> branchMap = getBranchNameMap();
         Map<Long, String> moduleMap = getModuleNameMap();
-        List<String> headers = List.of("User ID", "Employee ID", "Employee Code", "Full Name", "Email", "Mobile Number", "Department", "Designation", "Branch", "Role", "Reporting Manager", "Language", "Time Zone", "Login Type", "Password Expiry", "Two Factor Auth", "Remarks", "Dashboard", "Accessible Modules");
+        List<String> headers = List.of("User ID", "Employee ID", "Employee Code", "Full Name", "Email", "Mobile Number", "Department", "Designation", "Branch", "Role", "Reporting Manager", "Language", "Time Zone", "Login Type", "Password Expiry", "Two Factor Auth", "Remarks", "Dashboard", "Accessible Modules", "Status");
         List<String> mandatoryColumns = List.of("User ID", "Employee ID", "Employee Code", "Full Name", "Email", "Mobile Number", "Department", "Designation", "Branch", "Role", "Language", "Login Type");
         List<List<String>> rows = mapUsersToExcelRows(users, departmentMap, designationMap, roleMap, branchMap, moduleMap);
         byte[] excelBytes;
@@ -446,21 +446,25 @@ public class UserExcelService {
                 value(user.getTwoFactorAuthentication()),
                 value(user.getRemarks()),
                 value(user.getDashboard()),
-                getModuleNames(user.getAccessibleModules(), moduleMap))).toList();
+                getModuleNames(user.getAccessibleModules(), moduleMap),
+                user.getStatus() ? "Inactive" : "Active"
+        )).toList();
     }
 
     private String value(Object value) {
-        if (value == null) 
+        if (value == null)
             return "N/A";
         String text = String.valueOf(value).trim();
         return text.isEmpty() ? "N/A" : text;
     }
+
     private String getBranchNames(List<Long> branchIds, Map<Long, String> branchMap) {
         if (branchIds == null || branchIds.isEmpty())
             return "N/A";
         String result = branchIds.stream().map(branchMap::get).filter(Objects::nonNull).filter(name -> !name.isBlank()).collect(Collectors.joining(", "));
         return result.isBlank() ? "N/A" : result;
     }
+
     private String getModuleNames(List<Long> moduleIds, Map<Long, String> moduleMap) {
         if (moduleIds == null || moduleIds.isEmpty())
             return "N/A";
